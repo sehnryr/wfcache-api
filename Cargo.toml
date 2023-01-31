@@ -1,0 +1,17 @@
+[package]
+name = "wfcache-api"
+version = "0.1.0"
+edition = "2021"
+authors = ["Youn Mélois <youn@melois.dev>"]
+description = "Application that allows you to read and extract data from Warframe's cache files programmatically"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = "0.4.23"
+clap = { version = "4.1.4", features = ["derive"] }
+env_logger = "0.10.0"
+log = "0.4.17"
+lotus-lib = "0.5.1"
