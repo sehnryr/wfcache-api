@@ -1,6 +1,8 @@
+mod args;
 mod common;
 mod utils;
 
+use crate::args::Args;
 use crate::common::ls;
 use clap::Parser;
 use log::{error, info, trace};
@@ -8,34 +10,6 @@ use lotus_lib::{
     cache_pair::{CachePair, CachePairReader},
     package::{PackageCollection, PackageTrioType},
 };
-
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    /// Directory to use
-    #[arg(short, long)]
-    directory: std::path::PathBuf,
-
-    /// Package to search for
-    #[arg(short, long, default_value = "Misc")]
-    package: String,
-
-    /// Lotus path to search for
-    #[arg(short, long, default_value = "/")]
-    lotus_path: String,
-
-    /// List the content of a directory
-    #[arg(long, conflicts_with = "extract")]
-    ls: bool,
-
-    /// Extract the content of a directory recursively
-    #[arg(long, conflicts_with = "ls")]
-    extract: bool,
-
-    /// Overwrite existing files when extracting
-    #[arg(long, conflicts_with = "ls")]
-    overwrite: bool,
-}
 
 fn main() {
     env_logger::init();
