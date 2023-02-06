@@ -19,11 +19,11 @@ pub struct Args {
     #[arg(long, conflicts_with = "extract")]
     pub ls: bool,
 
-    /// Extract the content of a directory recursively
+    /// Extract a file or directory to the current directory (not implemented)
     #[arg(long, conflicts_with = "ls")]
     pub extract: bool,
 
-    /// Overwrite existing files when extracting
+    /// Overwrite existing files when extracting (not implemented)
     #[arg(long, conflicts_with = "ls")]
     pub overwrite: bool,
 }
