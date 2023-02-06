@@ -21,7 +21,7 @@ pub struct Args {
 
     /// Extract a file or directory to the current directory (not implemented)
     #[arg(long, conflicts_with = "ls")]
-    pub extract: bool,
+    pub extract: Option<String>,
 
     /// Overwrite existing files when extracting (not implemented)
     #[arg(long, conflicts_with = "ls")]

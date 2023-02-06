@@ -17,7 +17,7 @@ fn main() {
     let args = Args::parse();
     trace!("Args: {:?}", args);
 
-    if !args.ls && !args.extract {
+    if !args.ls && args.extract.is_none() {
         error!("You must specify either --ls or --extract");
         std::process::exit(1);
     }
@@ -60,7 +60,7 @@ fn main() {
 
     if args.ls {
         ls(header, args.lotus_path.as_str());
-    } else if args.extract {
+    } else if args.extract.is_some() {
         todo!("Extracting is not implemented yet");
     }
 }
