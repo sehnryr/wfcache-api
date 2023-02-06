@@ -6,7 +6,7 @@ from Warframe's cache files programmatically.
 ## API support
 
 - [x] list files and directories
-- [ ] extract a specific file
+- [ ] extract a specific file (see [supported formats](#supported-formats) below)
 - [ ] extract a directory and all its files and subdirectories recursively
 
 ## Future plans
@@ -17,3 +17,8 @@ from Warframe's cache files programmatically.
 ## Environment variables
 
 - `RUST_LOG`: set the log level (e.g. `RUST_LOG=debug`)
+
+## Supported formats
+
+- [ ] `*.png` Images (Exported as DDS)
+- [ ] `*.fbx` 3D models
