@@ -14,4 +14,4 @@ chrono = "0.4.23"
 clap = { version = "4.1.4", features = ["derive"] }
 env_logger = "0.10.0"
 log = "0.4.17"
-lotus-lib = "0.5.1"
+lotus-lib = "0.5.2"

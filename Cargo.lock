@@ -326,9 +326,9 @@ dependencies = [
 
 [[package]]
 name = "lotus-lib"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97e2391052a9da6d9bddf86426f81b6cfd9f5e4839efabbba520b29057d0abbe"
+checksum = "8efdd898be36ad7f4341953049da16e90f2c2382b070c3d47bb24b98a5d9f3f2"
 dependencies = [
  "indexmap",
  "lz4_flex",
