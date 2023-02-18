@@ -1,66 +1,62 @@
 mod args;
-mod common;
-mod utils;
+mod shell;
 
-use crate::args::Args;
-use crate::common::ls;
 use clap::Parser;
-use log::{error, info, trace};
+use log::{error, info};
 use lotus_lib::{
     cache_pair::{CachePair, CachePairReader},
     package::{PackageCollection, PackageTrioType},
 };
+use shell::ls::{ls_command, LsArguments};
+use shellfish::{clap_command, Shell};
 
-fn main() {
+use crate::shell::State;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
 
-    let args = Args::parse();
-    trace!("Args: {:?}", args);
+    // Parse arguments
+    let args = args::Args::parse();
 
-    if !args.ls && args.extract.is_none() {
-        error!("You must specify either --ls or --extract");
-        std::process::exit(1);
-    }
-
-    trace!("Initializing PackageCollection");
-    let collection = PackageCollection::<CachePairReader>::new(args.directory, true);
-    trace!("PackageCollection initialized");
+    // Initialize the package collection
+    let collection = PackageCollection::<CachePairReader>::new(args.directory.clone(), true);
     info!(
         "Loaded {} packages: {:?}",
         collection.packages().len(),
         collection.packages().keys().collect::<Vec<_>>()
     );
 
-    trace!("Getting package: {}", args.package);
+    // Get the package
     let package = collection.get_package(args.package.as_str());
     if package.is_none() {
         error!("Package not found: {}", args.package);
         std::process::exit(1);
     }
     let package = package.unwrap();
-    trace!("Package found: {}", args.package);
 
-    trace!("Getting header: H.{}.toc", args.package);
+    // Get the header
     let header = package.get(&PackageTrioType::H);
     if header.is_none() {
-        error!("Package has no header: {}", args.package);
         std::process::exit(1);
     }
     let header = header.unwrap();
-    trace!("Header found: H.{}.toc", args.package);
 
-    trace!("Loading header");
+    // Load the header
     header.read_toc();
-    trace!("Header loaded");
 
-    let files = header.files();
-    let dirs = header.dirs();
+    // Initialize the state
+    let state = State::new(args.directory, args.package, header);
 
-    info!("Loaded {} files, {} directories", files.len(), dirs.len());
+    // Define a shell
+    let mut shell = Shell::new(state, "wfcache-api$ ");
 
-    if args.ls {
-        ls(header, args.lotus_path.as_str());
-    } else if args.extract.is_some() {
-        todo!("Extracting is not implemented yet");
-    }
+    // Add ls command
+    shell
+        .commands
+        .insert("ls", clap_command!(State, LsArguments, ls_command));
+
+    // Run the shell
+    shell.run()?;
+
+    Ok(())
 }

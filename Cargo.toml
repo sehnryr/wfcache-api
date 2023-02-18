@@ -10,8 +10,11 @@ license = "GPL-3.0-or-later"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = "0.4.23"
 clap = { version = "4.1.4", features = ["derive"] }
 env_logger = "0.10.0"
 log = "0.4.17"
 lotus-lib = "0.5.2"
+relative-path = "1.7.3"
+shellfish = { git = "https://gitlab.com/raptros/shellfish", rev = "f9f48489", features = [
+    "clap",
+] }

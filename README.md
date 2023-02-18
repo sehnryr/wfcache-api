@@ -9,10 +9,9 @@ from Warframe's cache files programmatically.
 - [ ] extract a specific file (see [supported formats](#supported-formats) below)
 - [ ] extract a directory and all its files and subdirectories recursively
 
-## Future plans
+## Shell ergonomics
 
-- [ ] interactive CLI to explore the cache <!-- https://crates.io/crates/shellfish ? -->
-- [ ] cache path autocompletion for the CLI
+- [ ] auto-completion
 
 ## Environment variables
 
