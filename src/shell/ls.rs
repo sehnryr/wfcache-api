@@ -1,6 +1,6 @@
-use super::State;
+use super::{error::PathNotFound, State};
+use crate::utils::path::normalize_path;
 use clap::Parser;
-use relative_path::RelativePathBuf;
 use std::path::PathBuf;
 
 enum NodeKind {
@@ -10,23 +10,13 @@ enum NodeKind {
 
 /// List the content of a directory
 #[derive(Parser, Debug)]
-pub struct LsArguments {
+pub struct Arguments {
     #[arg(default_value = ".")]
     directory: PathBuf,
 }
 
-pub fn ls_command(state: &State, args: LsArguments) -> Result<(), Box<dyn std::error::Error>> {
-    let mut directory = args.directory;
-
-    // Normalize the path
-    if !directory.is_absolute() {
-        // Absolute bs
-        directory = state.current_lotus_dir.join(directory);
-        directory = RelativePathBuf::from(directory.to_str().unwrap())
-            .normalize()
-            .to_path("");
-        directory = PathBuf::from("/").join(directory);
-    }
+pub fn command(state: &State, args: Arguments) -> Result<(), Box<dyn std::error::Error>> {
+    let directory = normalize_path(&args.directory, &state.current_lotus_dir);
 
     // Get the directory node
     let dir_node = state.cache.get_dir_node(directory.to_str().unwrap());
@@ -50,10 +40,7 @@ pub fn ls_command(state: &State, args: LsArguments) -> Result<(), Box<dyn std::e
 
     // Add files
     for (name, _) in dir_node.child_files() {
-        nodes.push((
-            NodeKind::File,
-            name.to_string(),
-        ));
+        nodes.push((NodeKind::File, name.to_string()));
     }
 
     for (node_kind, name) in nodes {
@@ -68,14 +55,3 @@ pub fn ls_command(state: &State, args: LsArguments) -> Result<(), Box<dyn std::e
     }
     Ok(())
 }
-
-#[derive(Debug)]
-struct PathNotFound;
-
-impl std::fmt::Display for PathNotFound {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Path not found")
-    }
-}
-
-impl std::error::Error for PathNotFound {}

@@ -1,5 +1,6 @@
 mod args;
 mod shell;
+mod utils;
 
 use clap::Parser;
 use log::{error, info};
@@ -7,7 +8,7 @@ use lotus_lib::{
     cache_pair::{CachePair, CachePairReader},
     package::{PackageCollection, PackageTrioType},
 };
-use shell::ls::{ls_command, LsArguments};
+use shell::ls;
 use shellfish::{clap_command, Shell};
 
 use crate::shell::State;
@@ -53,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Add ls command
     shell
         .commands
-        .insert("ls", clap_command!(State, LsArguments, ls_command));
+        .insert("ls", clap_command!(State, ls::Arguments, ls::command));
 
     // Run the shell
     shell.run()?;
