@@ -8,7 +8,7 @@ use lotus_lib::{
     cache_pair::{CachePair, CachePairReader},
     package::{PackageCollection, PackageTrioType},
 };
-use shell::{cd, ls};
+use shell::{cd, ls, pwd};
 use shellfish::{clap_command, Shell};
 
 use crate::shell::State;
@@ -60,6 +60,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     shell
         .commands
         .insert("cd", clap_command!(State, cd::Arguments, cd::command));
+
+    // Add pwd command
+    shell
+        .commands
+        .insert("pwd", clap_command!(State, pwd::Arguments, pwd::command));
 
     // Run the shell
     shell.run()?;
