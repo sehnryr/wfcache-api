@@ -1,5 +1,5 @@
 use crate::shell::{error::PathNotFound, State};
-use crate::utils::{cache::read_header, path::normalize_path};
+use crate::utils::{header::Header, path::normalize_path};
 use clap::Parser;
 use std::path::PathBuf;
 
@@ -27,7 +27,7 @@ pub fn command(state: &State, args: Arguments) -> Result<(), Box<dyn std::error:
     let header_file_data = state.cache.decompress_data(file_node);
 
     // Create the header
-    let header = read_header(header_file_data);
+    let header = Header::from(header_file_data);
 
     // Print the header
     println!("{:#?}", header);

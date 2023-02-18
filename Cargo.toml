@@ -16,6 +16,7 @@ log = "0.4.17"
 lotus-lib = "0.5.2"
 relative-path = "1.7.3"
 rustyline = "10.1.1"
+serde_json = "1.0.93"
 shellfish = { git = "https://gitlab.com/raptros/shellfish", rev = "f9f48489", features = [
     "clap",
     "rustyline",
