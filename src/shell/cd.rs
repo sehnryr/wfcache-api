@@ -3,6 +3,7 @@ use crate::utils::path::normalize_path;
 use clap::Parser;
 use std::path::PathBuf;
 
+/// Change the working directory
 #[derive(Parser, Debug)]
 pub struct Arguments {
     #[arg(default_value = "/")]
