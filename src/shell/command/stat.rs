@@ -1,4 +1,4 @@
-use super::{error::PathNotFound, State};
+use crate::shell::{error::PathNotFound, State};
 use crate::utils::{cache::read_header, path::normalize_path};
 use clap::Parser;
 use std::path::PathBuf;

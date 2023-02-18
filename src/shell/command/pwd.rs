@@ -1,4 +1,4 @@
-use super::State;
+use crate::shell::State;
 use clap::Parser;
 
 /// Print the name of the current working directory

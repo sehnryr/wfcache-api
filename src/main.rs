@@ -8,7 +8,7 @@ use lotus_lib::{
     cache_pair::{CachePair, CachePairReader},
     package::{PackageCollection, PackageTrioType},
 };
-use shell::{cd, ls, pwd, stat};
+use shell::command::{cd, ls, pwd, stat};
 use shellfish::{clap_command, Shell};
 
 use crate::shell::State;
