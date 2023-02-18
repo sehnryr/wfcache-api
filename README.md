@@ -6,6 +6,7 @@ from Warframe's cache files programmatically.
 ## API support
 
 - [x] list files and directories
+- [x] move around directories
 - [ ] extract a specific file (see [supported formats](#supported-formats) below)
 - [ ] extract a directory and all its files and subdirectories recursively
 
