@@ -600,7 +600,9 @@ dependencies = [
  "log",
  "lotus-lib",
  "relative-path",
+ "rustyline",
  "shellfish",
+ "yansi",
 ]
 
 [[package]]

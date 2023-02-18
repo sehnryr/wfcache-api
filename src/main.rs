@@ -2,6 +2,7 @@ mod args;
 mod shell;
 mod utils;
 
+use crate::shell::{Handler, State};
 use clap::Parser;
 use log::{error, info};
 use lotus_lib::{
@@ -10,8 +11,6 @@ use lotus_lib::{
 };
 use shell::command::{cd, ls, pwd, stat};
 use shellfish::{clap_command, Shell};
-
-use crate::shell::State;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
@@ -49,7 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let state = State::new(args.directory, args.package, header);
 
     // Define a shell
-    let mut shell = Shell::new(state, "wfcache-api$ ");
+    let mut shell = Shell::new_with_handler(state, "wfcache-api$ ", Handler());
 
     // Add ls command
     shell
