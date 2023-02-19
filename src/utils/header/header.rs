@@ -1,11 +1,11 @@
 use super::arguments::parse_arguments;
+use derivative::Derivative;
 use serde_json::Value;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FileType {
     Image,
     PBRMap,
-    Sound,
     Unknown,
 }
 
@@ -14,36 +14,38 @@ impl From<u32> for FileType {
         match file_type {
             0xA3 | 0xB8 => FileType::Image,
             0xBC => FileType::PBRMap,
-            0x8B => FileType::Sound,
             _ => FileType::Unknown,
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Derivative)]
+#[derivative(Debug)]
 pub struct Header {
     pub file_paths: Vec<String>,
-    // pub arguments: HashMap<String, String>,
     pub arguments: Value,
     pub file_type: FileType,
     pub raw_type: String,
+
+    #[derivative(Debug = "ignore")]
+    pub size: usize,
 }
 
 impl Header {
-    pub fn default() -> Header {
-        Header {
-            file_paths: Vec::new(),
-            // arguments: HashMap::new(),
-            arguments: Value::Null,
-            file_type: FileType::Unknown,
-            raw_type: String::new(),
-        }
+    pub fn is_supported(&self) -> bool {
+        self.file_type != FileType::Unknown
     }
 }
 
 impl Default for Header {
     fn default() -> Self {
-        Self::default()
+        Self {
+            file_paths: Vec::new(),
+            arguments: Value::Null,
+            file_type: FileType::Unknown,
+            raw_type: String::new(),
+            size: 0,
+        }
     }
 }
 
@@ -111,22 +113,20 @@ impl<T: Into<Vec<u8>>> From<T> for Header {
         }
 
         // Read the file type
-        header.raw_type = format!(
-            "0x{:X}",
-            u32::from_le_bytes([
-                data[file_paths_offset],
-                data[file_paths_offset + 1],
-                data[file_paths_offset + 2],
-                data[file_paths_offset + 3],
-            ])
-        );
-
-        header.file_type = FileType::from(u32::from_le_bytes([
+        let file_type = u32::from_le_bytes([
             data[file_paths_offset],
             data[file_paths_offset + 1],
             data[file_paths_offset + 2],
             data[file_paths_offset + 3],
-        ]));
+        ]);
+        file_paths_offset += 4;
+
+        header.raw_type = format!("0x{:X}", file_type);
+
+        header.file_type = FileType::from(file_type);
+
+        // Set the size
+        header.size = file_paths_offset;
 
         header
     }
