@@ -2,14 +2,16 @@ mod args;
 mod shell;
 mod utils;
 
-use crate::shell::{Handler, State};
+use crate::shell::{
+    command::{cd, get, ls, pwd, stat},
+    Handler, State,
+};
 use clap::Parser;
 use log::{error, info};
 use lotus_lib::{
     cache_pair::{CachePair, CachePairReader},
     package::{PackageCollection, PackageTrioType},
 };
-use shell::command::{cd, ls, pwd, stat};
 use shellfish::{clap_command, Shell};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -69,6 +71,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     shell
         .commands
         .insert("stat", clap_command!(State, stat::Arguments, stat::command));
+
+    // Add get command
+    shell
+        .commands
+        .insert("get", clap_command!(State, get::Arguments, get::command));
 
     // Run the shell
     shell.run()?;
