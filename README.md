@@ -7,7 +7,7 @@ from Warframe's cache files programmatically.
 
 - [x] list files and directories
 - [x] move around directories
-- [ ] extract a specific file (see [supported formats](#supported-formats) below)
+- [x] extract a specific file (see [supported formats](#supported-formats) below)
 - [ ] extract a directory and all its files and subdirectories recursively
 
 ## Shell ergonomics
@@ -21,5 +21,5 @@ from Warframe's cache files programmatically.
 
 ## Supported formats
 
-- [ ] `*.png` Images (Exported as DDS)
+- [x] `*.png` Images (Exported as DDS)
 - [ ] `*.fbx` 3D models
