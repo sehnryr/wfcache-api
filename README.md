@@ -13,6 +13,7 @@ from Warframe's cache files programmatically.
 ## Shell ergonomics
 
 - [ ] auto-completion
+- [ ] run commands from outside the shell (e.g. `wfcache-api -c "ls /Lotus" [arg ...]`)
 
 ## Environment variables
 
