@@ -13,7 +13,7 @@ pub fn command(state: &State, args: Arguments) -> Result<(), Box<dyn std::error:
     let file = normalize_path(&args.file, &state.current_lotus_dir);
 
     // Get the file node
-    let file_node = state.cache.get_file_node(file.to_str().unwrap());
+    let file_node = state.h_cache.get_file_node(file.to_str().unwrap());
 
     // Check if the file exists
     if file_node.is_none() {
@@ -24,7 +24,7 @@ pub fn command(state: &State, args: Arguments) -> Result<(), Box<dyn std::error:
     let file_node = file_node.unwrap();
 
     // Get the decompressed header file data
-    let header_file_data = state.cache.decompress_data(file_node);
+    let header_file_data = state.h_cache.decompress_data(file_node);
 
     // Create the header
     let header = Header::from(header_file_data);

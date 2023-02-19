@@ -36,18 +36,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let package = package.unwrap();
 
-    // Get the header
-    let header = package.get(&PackageTrioType::H);
-    if header.is_none() {
-        std::process::exit(1);
-    }
-    let header = header.unwrap();
+    let h_cache = package.get(&PackageTrioType::H);
+    let f_cache = package.get(&PackageTrioType::F);
+    let b_cache = package.get(&PackageTrioType::B);
 
-    // Load the header
-    header.read_toc();
+    if h_cache.is_none() {
+        std::process::exit(1);
+    } else {
+        h_cache.unwrap().read_toc();
+    }
+    if f_cache.is_some() {
+        f_cache.unwrap().read_toc();
+    }
+    if b_cache.is_some() {
+        b_cache.unwrap().read_toc();
+    }
 
     // Initialize the state
-    let state = State::new(args.directory, args.package, header);
+    let state = State::new(args.directory, h_cache.unwrap(), f_cache, b_cache);
 
     // Define a shell
     let mut shell = Shell::new_with_handler(state, "wfcache-api$ ", Handler());
