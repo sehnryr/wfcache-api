@@ -17,7 +17,7 @@ from Warframe's cache files programmatically.
 
 ## Environment variables
 
-- `RUST_LOG`: set the log level (e.g. `RUST_LOG=debug`)
+- `RUST_LOG`: set the log level (e.g. `RUST_LOG=wfcache_api=debug`)
 
 ## Supported formats
 
