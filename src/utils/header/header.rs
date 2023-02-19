@@ -22,7 +22,6 @@ impl From<u32> for FileType {
 
 #[derive(Debug)]
 pub struct Header {
-    pub merged_file_count: u32,
     pub file_paths: Vec<String>,
     // pub arguments: HashMap<String, String>,
     pub arguments: Value,
@@ -33,7 +32,6 @@ pub struct Header {
 impl Header {
     pub fn default() -> Header {
         Header {
-            merged_file_count: 0,
             file_paths: Vec::new(),
             // arguments: HashMap::new(),
             arguments: Value::Null,
@@ -58,7 +56,7 @@ impl<T: Into<Vec<u8>>> From<T> for Header {
         let mut file_paths_offset = 16;
 
         // Read the merged file count
-        header.merged_file_count = u32::from_le_bytes([
+        let merged_file_count = u32::from_le_bytes([
             data[file_paths_offset],
             data[file_paths_offset + 1],
             data[file_paths_offset + 2],
@@ -67,7 +65,7 @@ impl<T: Into<Vec<u8>>> From<T> for Header {
         file_paths_offset += 4;
 
         // Read the file paths
-        for _ in 0..header.merged_file_count {
+        for _ in 0..merged_file_count {
             // Read the path length
             let path_length = u32::from_le_bytes([
                 data[file_paths_offset],
