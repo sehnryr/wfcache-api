@@ -8,3 +8,14 @@ impl std::fmt::Display for PathNotFound {
 }
 
 impl std::error::Error for PathNotFound {}
+
+#[derive(Debug)]
+pub struct MissingArgument;
+
+impl std::fmt::Display for MissingArgument {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Missing argument")
+    }
+}
+
+impl std::error::Error for MissingArgument {}
