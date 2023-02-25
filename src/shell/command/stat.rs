@@ -4,7 +4,7 @@ use clap::Parser;
 use std::path::PathBuf;
 
 /// Display file status
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 pub struct Arguments {
     file: PathBuf,
 }

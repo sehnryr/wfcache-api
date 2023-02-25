@@ -619,18 +619,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "shellfish"
-version = "0.7.0"
-source = "git+https://gitlab.com/raptros/shellfish?rev=f9f48489#f9f48489ab11a70931e1f9e2aaa01e01b17af3ad"
-dependencies = [
- "clap",
- "rustyline",
- "thiserror",
- "version_check",
- "yansi",
-]
-
-[[package]]
 name = "smallvec"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -753,7 +741,6 @@ dependencies = [
  "relative-path",
  "rustyline",
  "serde_json",
- "shellfish",
  "yansi",
 ]
 

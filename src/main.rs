@@ -2,19 +2,52 @@ mod args;
 mod shell;
 mod utils;
 
-use crate::shell::{
-    command::{cd, get, ls, pwd, stat},
-    Handler, State,
-};
-use clap::Parser;
+use clap::error::ErrorKind;
+use clap::{Parser, Subcommand};
 use log::{error, info};
-use lotus_lib::{
-    cache_pair::{CachePair, CachePairReader},
-    package::{PackageCollection, PackageTrioType},
-};
-use shellfish::{clap_command, Shell};
+use lotus_lib::cache_pair::{CachePair, CachePairReader};
+use lotus_lib::package::{PackageCollection, PackageTrioType};
+use rustyline::error::ReadlineError;
+use rustyline::Editor;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+use crate::shell::command::{cd, get, ls, pwd, stat};
+use crate::shell::State;
+
+/// The enum of sub-commands supported by the CLI
+#[derive(Subcommand, Clone, Debug)]
+pub enum Command {
+    /// Change the current working directory
+    #[clap(name = "cd")]
+    ChangeDirectory(cd::Arguments),
+
+    /// Get the contents of a file
+    #[clap(name = "get")]
+    GetFileContent(get::Arguments),
+
+    /// List the contents of a directory
+    #[clap(name = "ls")]
+    ListDirectoryContents(ls::Arguments),
+
+    /// Print the metadata of a file
+    #[clap(name = "stat")]
+    PrintFileMetadata(stat::Arguments),
+
+    /// Print the current working directory
+    #[clap(name = "pwd")]
+    PrintWorkingDirectory(pwd::Arguments),
+}
+
+#[derive(Parser, Clone, Debug)]
+#[clap(
+    version = env!("CARGO_PKG_VERSION"),
+    about = env!("CARGO_PKG_DESCRIPTION"),
+)]
+pub struct Cli {
+    #[clap(subcommand)]
+    command: Command,
+}
+
+fn main() -> rustyline::Result<()> {
     env_logger::init();
 
     // Parse arguments
@@ -53,38 +86,66 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Initialize the state
-    let state = State::new(args.directory, h_cache.unwrap(), f_cache, b_cache);
+    let mut state = State::new(args.directory, h_cache.unwrap(), f_cache, b_cache);
 
-    // Define a shell
-    let mut shell = Shell::new_with_handler(state, "wfcache-api$ ", Handler());
+    let mut rl = Editor::<()>::new()?;
+    let prompt = "wfcache-api$ ";
 
-    // Add ls command
-    shell
-        .commands
-        .insert("ls", clap_command!(State, ls::Arguments, ls::command));
+    loop {
+        let line = rl.readline(&prompt);
+        match line {
+            Ok(_) => {}
+            Err(ReadlineError::Interrupted) => break, // Ctrl-C
+            Err(ReadlineError::Eof) => break,         // Ctrl-D
+            Err(err) => {
+                println!("Error: {err:?}");
+                break;
+            }
+        }
 
-    // Add cd command
-    shell
-        .commands
-        .insert("cd", clap_command!(State, cd::Arguments, cd::command));
+        // Trim the line
+        let line: String = line.unwrap();
+        let line: &str = line.trim();
 
-    // Add pwd command
-    shell
-        .commands
-        .insert("pwd", clap_command!(State, pwd::Arguments, pwd::command));
+        // Get the command if it exists
+        let parts: Vec<&str> = line.split(' ').collect();
+        let mut command = String::new();
+        if let Some(head) = parts.first() {
+            command = String::from(*head);
+        }
 
-    // Add stat command
-    shell
-        .commands
-        .insert("stat", clap_command!(State, stat::Arguments, stat::command));
+        // Handle quit/exit commands and skip if empty
+        match command.to_lowercase().as_str() {
+            "" => continue, // Do nothing
+            "quit" | "exit" => break,
+            _ => {}
+        }
 
-    // Add get command
-    shell
-        .commands
-        .insert("get", clap_command!(State, get::Arguments, get::command));
+        // Add the line to the history
+        rl.add_history_entry(line);
 
-    // Run the shell
-    shell.run()?;
+        let mut command_parts = parts;
+        command_parts.insert(0, env!("CARGO_PKG_NAME"));
+
+        match Cli::try_parse_from(command_parts.into_iter()) {
+            Ok(command) => match command.command {
+                Command::ChangeDirectory(args) => cd::command(&mut state, args),
+                Command::GetFileContent(args) => get::command(&mut state, args),
+                Command::ListDirectoryContents(args) => ls::command(&mut state, args),
+                Command::PrintFileMetadata(args) => stat::command(&mut state, args),
+                Command::PrintWorkingDirectory(args) => pwd::command(&mut state, args),
+            },
+            Err(err) => Ok(match clap::Error::kind(&err) {
+                ErrorKind::DisplayHelp => println!("{err}"),
+                ErrorKind::DisplayVersion => println!("{err}"),
+                _ => println!("Invalid command (type 'help' for help)"),
+            }),
+        }
+        .unwrap();
+
+        // Pad the output
+        println!();
+    }
 
     Ok(())
 }

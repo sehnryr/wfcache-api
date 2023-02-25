@@ -10,7 +10,7 @@ enum NodeKind {
 }
 
 /// List the content of a directory
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 pub struct Arguments {
     #[arg(default_value = ".")]
     directory: PathBuf,

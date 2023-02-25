@@ -13,7 +13,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 /// Extract a file from the cache or a directory recursively
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 pub struct Arguments {
     #[arg(default_value = ".")]
     path: PathBuf,

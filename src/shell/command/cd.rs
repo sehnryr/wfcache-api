@@ -4,7 +4,7 @@ use clap::Parser;
 use std::path::PathBuf;
 
 /// Change the working directory
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 pub struct Arguments {
     #[arg(default_value = "/")]
     directory: PathBuf,
