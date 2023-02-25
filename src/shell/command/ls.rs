@@ -1,6 +1,7 @@
 use crate::shell::{error::PathNotFound, State};
 use crate::utils::path::normalize_path;
 use clap::Parser;
+use lotus_lib::toc::node::Node;
 use std::path::PathBuf;
 
 enum NodeKind {
@@ -19,7 +20,9 @@ pub fn command(state: &State, args: Arguments) -> Result<(), Box<dyn std::error:
     let directory = normalize_path(&args.directory, &state.current_lotus_dir);
 
     // Get the directory node
-    let dir_node = state.h_cache.get_dir_node(directory.to_str().unwrap());
+    let dir_node = state
+        .h_cache
+        .get_directory_node(directory.to_str().unwrap());
 
     // Check if the directory exists
     if dir_node.is_none() {
@@ -34,13 +37,13 @@ pub fn command(state: &State, args: Arguments) -> Result<(), Box<dyn std::error:
     let mut nodes: Vec<(NodeKind, String)> = Vec::new();
 
     // Add directories
-    for (name, _) in dir_node.child_dirs() {
-        nodes.push((NodeKind::Directory, name.to_string()));
+    for child_directory in dir_node.children_directories() {
+        nodes.push((NodeKind::Directory, child_directory.borrow().name()));
     }
 
     // Add files
-    for (name, _) in dir_node.child_files() {
-        nodes.push((NodeKind::File, name.to_string()));
+    for child_file in dir_node.children_files() {
+        nodes.push((NodeKind::File, child_file.borrow().name()));
     }
 
     for (node_kind, name) in nodes {

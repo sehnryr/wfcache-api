@@ -43,13 +43,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if h_cache.is_none() {
         std::process::exit(1);
     } else {
-        h_cache.unwrap().read_toc();
+        h_cache.unwrap().read_toc().unwrap();
     }
     if f_cache.is_some() {
-        f_cache.unwrap().read_toc();
+        f_cache.unwrap().read_toc().unwrap();
     }
     if b_cache.is_some() {
-        b_cache.unwrap().read_toc();
+        b_cache.unwrap().read_toc().unwrap();
     }
 
     // Initialize the state
