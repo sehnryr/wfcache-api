@@ -1,11 +1,11 @@
-use crate::shell::error::MissingArgument;
 use crate::shell::{error::PathNotFound, State};
 use crate::utils::header::{FileType, Header, Image};
 use crate::utils::path::normalize_path;
 use clap::Parser;
-use log::{debug, warn};
+use log::{debug, info, warn};
 use lotus_lib::cache_pair::CachePair;
-use lotus_lib::toc::{DirNode, FileNode, Node};
+use lotus_lib::toc::node::Node;
+use lotus_lib::toc::{DirectoryNode, FileNode};
 use lotus_lib::utils::_decompress_post_ensmallening;
 use std::cell::RefCell;
 use std::io::{Seek, Write};
@@ -19,7 +19,7 @@ pub struct Arguments {
     path: PathBuf,
 
     /// Extract recursively
-    #[arg(short)]
+    #[arg(short, default_value = "false")]
     recursive: bool,
 }
 
@@ -29,7 +29,7 @@ pub fn command(state: &mut State, args: Arguments) -> Result<(), Box<dyn std::er
 
     // Get the file node or directory node
     let file_node = state.h_cache.get_file_node(path.to_str().unwrap());
-    let dir_node = state.h_cache.get_dir_node(path.to_str().unwrap());
+    let dir_node = state.h_cache.get_directory_node(path.to_str().unwrap());
 
     // Check if the file or directory exists
     let is_file = file_node.is_some();
@@ -37,9 +37,6 @@ pub fn command(state: &mut State, args: Arguments) -> Result<(), Box<dyn std::er
 
     if !is_file && !is_dir {
         return Err(Box::new(PathNotFound));
-    }
-    if !is_file && is_dir && !args.recursive {
-        return Err(Box::new(MissingArgument));
     }
     if is_file {
         output_dir.pop();
@@ -53,7 +50,12 @@ pub fn command(state: &mut State, args: Arguments) -> Result<(), Box<dyn std::er
     if is_file {
         Ok(extract_file(state, file_node.unwrap(), output_dir))
     } else {
-        Ok(extract_dir(state, dir_node.unwrap(), output_dir))
+        Ok(extract_dir(
+            state,
+            dir_node.unwrap(),
+            output_dir,
+            args.recursive,
+        ))
     }
 }
 
@@ -94,15 +96,14 @@ fn extract_file(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Pat
     let file_data: Vec<u8>;
 
     if header.f_cache_image_count > 0 {
-        let cache_image_offset = *header.f_cache_image_offsets.last().unwrap();
+        let cache_image_offset = *header.f_cache_image_offsets.last().unwrap_or(&0);
         let f_cache = state.f_cache.unwrap();
-        let file_node = f_cache.get_file_node(file_node.path().as_str()).unwrap();
+        let file_node = f_cache.get_file_node(file_node.path()).unwrap();
         let file_node = file_node.borrow();
         let mut f_cache_reader = std::fs::File::open(f_cache.cache_path()).unwrap();
 
         debug!("Cache offset: {}", file_node.cache_offset() as u64);
         debug!("Cache image size: {}", file_node.comp_len() as u64);
-        debug!("Cache image offset: {}", cache_image_offset as u64);
         debug!("Real image size: {}", header.size() as u64);
 
         f_cache_reader
@@ -118,7 +119,7 @@ fn extract_file(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Pat
         );
     } else {
         let b_cache = state.b_cache.unwrap();
-        let file_node = b_cache.get_file_node(file_node.path().as_str()).unwrap();
+        let file_node = b_cache.get_file_node(file_node.path()).unwrap();
         let _file_node = file_node.borrow();
 
         debug!("Cache offset: {}", _file_node.cache_offset() as u64);
@@ -136,6 +137,31 @@ fn extract_file(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Pat
     buffer.write_all(&file_data).unwrap();
 }
 
-fn extract_dir(state: &State, dir_node: Rc<RefCell<DirNode>>, output_dir: PathBuf) -> () {
-    todo!("Extract directory");
+fn extract_dir(
+    state: &State,
+    dir_node: Rc<RefCell<DirectoryNode>>,
+    output_dir: PathBuf,
+    recursive: bool,
+) -> () {
+    let dir_node = dir_node.borrow();
+
+    // Create the output directory
+    std::fs::create_dir_all(output_dir.clone()).unwrap();
+
+    // Extract the files
+    for file_child_node in dir_node.children_files() {
+        info!(
+            "Extracting file: {}",
+            file_child_node.borrow().path().display()
+        );
+        extract_file(state, file_child_node.clone(), output_dir.clone());
+    }
+
+    // Extract the directories
+    if recursive {
+        for dir_child_node in dir_node.children_directories() {
+            debug!("Extracting directory: {}", dir_child_node.borrow().name());
+            extract_dir(state, dir_child_node.clone(), output_dir.clone(), recursive);
+        }
+    }
 }
