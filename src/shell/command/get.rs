@@ -50,6 +50,7 @@ pub fn command(state: &mut State, args: Arguments) -> Result<(), Box<dyn std::er
     if is_file {
         Ok(extract_file(state, file_node.unwrap(), output_dir))
     } else {
+        output_dir.pop();
         Ok(extract_dir(
             state,
             dir_node.unwrap(),
@@ -146,6 +147,8 @@ fn extract_dir(
     let dir_node = dir_node.borrow();
 
     // Create the output directory
+    let mut output_dir = output_dir.clone();
+    output_dir.push(dir_node.name());
     std::fs::create_dir_all(output_dir.clone()).unwrap();
 
     // Extract the files
