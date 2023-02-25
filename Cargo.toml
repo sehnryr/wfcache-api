@@ -3,9 +3,13 @@ name = "wfcache-api"
 version = "0.1.0"
 edition = "2021"
 authors = ["Youn Mélois <youn@melois.dev>"]
+repository = "https://github.com/sehnryr/wfcache-api"
+homepage = "https://github.com/sehnryr/wfcache-api"
 description = "Application that allows you to read and extract data from Warframe's cache files programmatically"
 readme = "README.md"
 license = "GPL-3.0-or-later"
+keywords = ["warframe", "cache", "decompression", "cli"]
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
