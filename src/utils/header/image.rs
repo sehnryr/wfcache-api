@@ -1,8 +1,8 @@
-use std::cmp::max;
-
-use super::Header;
 use ddsfile::{FourCC, Header as DDSHeader, PixelFormatFlags};
 use derivative::Derivative;
+use std::cmp::max;
+
+use crate::utils::header::Header;
 
 fn map_fourcc(value: u8) -> FourCC {
     match value {

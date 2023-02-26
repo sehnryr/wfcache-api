@@ -1,6 +1,7 @@
-use super::arguments::parse_arguments;
 use derivative::Derivative;
 use serde_json::Value;
+
+use crate::utils::header::arguments::parse_arguments;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum FileType {
