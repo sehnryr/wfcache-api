@@ -109,7 +109,6 @@ fn extract_file(
     let file_data: Vec<u8>;
 
     if header.f_cache_image_count > 0 {
-        let cache_image_sub_offset = *header.f_cache_image_offsets.last().unwrap_or(&0);
         let f_cache = state.f_cache.unwrap();
         let file_node = f_cache.get_file_node(file_node.path()).unwrap();
         let _file_node = file_node.borrow();
@@ -118,23 +117,33 @@ fn extract_file(
         debug!("Cache image size: {}", _file_node.comp_len() as u64);
         debug!("Real image size: {}", header.size() as u64);
 
-        let mut f_cache_reader = File::open(f_cache.cache_path()).unwrap();
-        let real_cache_image_sub_offset = get_real_cache_image_offset(
-            &mut f_cache_reader,
-            _file_node.cache_offset() as usize,
-            cache_image_sub_offset as usize,
-        )?;
+        let f_cache_offsets = header.f_cache_image_offsets.clone();
 
-        debug!("Cache image offset: {}", cache_image_sub_offset);
-        debug!("Real cache image offset: {}", real_cache_image_sub_offset);
-
-        f_cache_reader.seek(SeekFrom::Current(real_cache_image_sub_offset as i64))?;
-
-        file_data = internal_decompress_post_ensmallening(
-            _file_node.comp_len() as usize,
-            header.size() as usize,
-            &mut f_cache_reader,
-        )?;
+        if f_cache_offsets.len() != 0 {
+            let cache_image_sub_offset = *f_cache_offsets.last().unwrap_or(&0);
+    
+            let mut f_cache_reader = File::open(f_cache.cache_path()).unwrap();
+            let real_cache_image_sub_offset = get_real_cache_image_offset(
+                &mut f_cache_reader,
+                _file_node.cache_offset() as usize,
+                cache_image_sub_offset as usize,
+            )?;
+    
+            debug!("Cache image offset: {}", cache_image_sub_offset);
+            debug!("Real cache image offset: {}", real_cache_image_sub_offset);
+    
+            f_cache_reader.seek(SeekFrom::Current(real_cache_image_sub_offset as i64))?;
+    
+            file_data = internal_decompress_post_ensmallening(
+                _file_node.comp_len() as usize,
+                header.size() as usize,
+                &mut f_cache_reader,
+            )?;
+        } else {
+            // Fall back to the old method if the cache image offsets are not present
+            let _file_data = f_cache.decompress_data(file_node.clone())?;
+            file_data = _file_data[_file_data.len() - header.size().._file_data.len()].to_vec();
+        }
     } else {
         let b_cache = state.b_cache.unwrap();
         let file_node = b_cache.get_file_node(file_node.path()).unwrap();
