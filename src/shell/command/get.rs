@@ -116,6 +116,7 @@ fn extract_file(
         debug!("Cache offset: {}", _file_node.cache_offset() as u64);
         debug!("Cache image size: {}", _file_node.comp_len() as u64);
         debug!("Real image size: {}", header.size() as u64);
+        debug!("Decompressed image size: {}", _file_node.len() as u64);
 
         let f_cache_offsets = header.f_cache_image_offsets.clone();
 
@@ -152,6 +153,7 @@ fn extract_file(
         debug!("Cache offset: {}", _file_node.cache_offset() as u64);
         debug!("Cache image size: {}", _file_node.comp_len() as u64);
         debug!("Real image size: {}", header.size() as u64);
+        debug!("Decompressed image size: {}", _file_node.len() as u64);
 
         let _file_data = b_cache.decompress_data(file_node.clone())?;
         file_data = _file_data[_file_data.len() - header.size().._file_data.len()].to_vec();

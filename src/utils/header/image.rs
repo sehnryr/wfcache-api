@@ -17,6 +17,17 @@ fn map_dxgi(value: u8) -> DxgiFormat {
     }
 }
 
+fn map_fourcc(value: u8) -> FourCC {
+    match value {
+        0x00 | 0x01 => FourCC(FourCC::DXT1),
+        0x02 => FourCC(FourCC::DXT3),
+        0x03 => FourCC(FourCC::DXT5),
+        0x06 => FourCC(FourCC::ATI1),
+        0x07 => FourCC(FourCC::ATI2),
+        _ => FourCC(FourCC::NONE),
+    }
+}
+
 #[derive(Derivative)]
 #[derivative(Debug)]
 pub struct Image {
@@ -46,6 +57,7 @@ impl Image {
         data_offset += 1;
 
         // Read the DDS compression format
+        let fourcc = map_fourcc(data[data_offset]);
         let format = map_dxgi(data[data_offset]);
         data_offset += 1;
 
@@ -104,11 +116,19 @@ impl Image {
             height = max_side_length;
         }
 
-        Image::new(
-            DDSHeader::new_dxgi(height, width, None, format, None, None, None).unwrap(),
-            f_cache_image_count,
-            f_cache_image_offsets,
-        )
+        if fourcc != FourCC(FourCC::NONE) {
+            let mut header = DDSHeader::default();
+            header.width = width;
+            header.height = height;
+            header.spf.fourcc = Some(fourcc);
+
+            return Image::new(header, f_cache_image_count, f_cache_image_offsets);
+        } else {
+            let header =
+                DDSHeader::new_dxgi(height, width, None, format, None, None, None).unwrap();
+
+            return Image::new(header, f_cache_image_count, f_cache_image_offsets);
+        }
     }
 
     pub fn size(&self) -> usize {
