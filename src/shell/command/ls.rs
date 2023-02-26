@@ -1,8 +1,10 @@
-use crate::shell::{error::PathNotFound, State};
-use crate::utils::path::normalize_path;
+use anyhow::{Error, Result};
 use clap::Parser;
 use lotus_lib::toc::node::Node;
 use std::path::PathBuf;
+
+use crate::shell::{error::PathNotFound, State};
+use crate::utils::path::normalize_path;
 
 enum NodeKind {
     File,
@@ -16,7 +18,7 @@ pub struct Arguments {
     directory: PathBuf,
 }
 
-pub fn command(state: &State, args: Arguments) -> Result<(), Box<dyn std::error::Error>> {
+pub fn command(state: &State, args: Arguments) -> Result<()> {
     let directory = normalize_path(&args.directory, &state.current_lotus_dir);
 
     // Get the directory node
@@ -26,7 +28,7 @@ pub fn command(state: &State, args: Arguments) -> Result<(), Box<dyn std::error:
 
     // Check if the directory exists
     if dir_node.is_none() {
-        return Err(Box::new(PathNotFound));
+        return Err(Error::from(PathNotFound));
     }
 
     // Get the directory node

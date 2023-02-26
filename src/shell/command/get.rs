@@ -1,16 +1,18 @@
-use crate::shell::{error::PathNotFound, State};
-use crate::utils::header::{FileType, Header, Image};
-use crate::utils::path::normalize_path;
+use anyhow::{Error, Result};
 use clap::Parser;
 use log::{debug, info, warn};
 use lotus_lib::cache_pair::CachePair;
 use lotus_lib::toc::node::Node;
 use lotus_lib::toc::{DirectoryNode, FileNode};
-use lotus_lib::utils::_decompress_post_ensmallening;
+use lotus_lib::utils::internal_decompress_post_ensmallening;
 use std::cell::RefCell;
 use std::io::{Seek, Write};
 use std::path::PathBuf;
 use std::rc::Rc;
+
+use crate::shell::{error::PathNotFound, State};
+use crate::utils::header::{FileType, Header, Image};
+use crate::utils::path::normalize_path;
 
 /// Extract a file from the cache or a directory recursively
 #[derive(Parser, Debug, Clone)]
@@ -23,7 +25,7 @@ pub struct Arguments {
     recursive: bool,
 }
 
-pub fn command(state: &mut State, args: Arguments) -> Result<(), Box<dyn std::error::Error>> {
+pub fn command(state: &mut State, args: Arguments) -> Result<()> {
     let path = normalize_path(&args.path, &state.current_lotus_dir);
     let mut output_dir = path.strip_prefix("/").unwrap().to_path_buf();
 
@@ -36,7 +38,7 @@ pub fn command(state: &mut State, args: Arguments) -> Result<(), Box<dyn std::er
     let is_dir = dir_node.is_some();
 
     if !is_file && !is_dir {
-        return Err(Box::new(PathNotFound));
+        return Err(Error::from(PathNotFound));
     }
     if is_file {
         output_dir.pop();
@@ -47,22 +49,27 @@ pub fn command(state: &mut State, args: Arguments) -> Result<(), Box<dyn std::er
     std::fs::create_dir_all(output_dir.clone()).unwrap();
 
     // Extract the file or directory
-    if is_file {
-        Ok(extract_file(state, file_node.unwrap(), output_dir))
+    match if is_file {
+        extract_file(state, file_node.unwrap(), output_dir)
     } else {
         output_dir.pop();
-        Ok(extract_dir(
-            state,
-            dir_node.unwrap(),
-            output_dir,
-            args.recursive,
-        ))
+        extract_dir(state, dir_node.unwrap(), output_dir, args.recursive)
+    } {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            warn!("Error: {}", e);
+            Err(e)
+        }
     }
 }
 
-fn extract_file(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: PathBuf) -> () {
+fn extract_file(
+    state: &State,
+    file_node: Rc<RefCell<FileNode>>,
+    output_dir: PathBuf,
+) -> Result<()> {
     // Get the decompressed header file data
-    let header_file_data = state.h_cache.decompress_data(file_node.clone());
+    let header_file_data = state.h_cache.decompress_data(file_node.clone())?;
     let file_node = file_node.borrow();
 
     // Create the header
@@ -70,12 +77,16 @@ fn extract_file(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Pat
 
     // Check if the file is supported
     if !header.is_supported() {
-        warn!("File is not supported: {}", file_node.name());
-        return;
+        return Err(Error::msg(format!(
+            "File is not supported: {}",
+            file_node.name()
+        )));
     }
     if ![FileType::Image, FileType::PBRMap].contains(&header.file_type) {
-        warn!("File is not an image: {}", file_node.name());
-        return;
+        return Err(Error::msg(format!(
+            "File is not an image: {}",
+            file_node.name()
+        )));
     }
 
     // Create the image
@@ -113,11 +124,11 @@ fn extract_file(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Pat
             ))
             .unwrap();
 
-        file_data = _decompress_post_ensmallening(
+        file_data = internal_decompress_post_ensmallening(
             file_node.comp_len() as usize,
             header.size(),
             &mut f_cache_reader,
-        );
+        )?;
     } else {
         let b_cache = state.b_cache.unwrap();
         let file_node = b_cache.get_file_node(file_node.path()).unwrap();
@@ -127,7 +138,7 @@ fn extract_file(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Pat
         debug!("Cache image size: {}", _file_node.comp_len() as u64);
         debug!("Real image size: {}", header.size() as u64);
 
-        let _file_data = b_cache.decompress_data(file_node.clone());
+        let _file_data = b_cache.decompress_data(file_node.clone())?;
         file_data = _file_data[_file_data.len() - header.size().._file_data.len()].to_vec();
     }
 
@@ -136,6 +147,8 @@ fn extract_file(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Pat
     buffer.write(b"DDS ").unwrap();
     header.header.write(&mut buffer).unwrap();
     buffer.write_all(&file_data).unwrap();
+
+    Ok(())
 }
 
 fn extract_dir(
@@ -143,7 +156,7 @@ fn extract_dir(
     dir_node: Rc<RefCell<DirectoryNode>>,
     output_dir: PathBuf,
     recursive: bool,
-) -> () {
+) -> Result<()> {
     let dir_node = dir_node.borrow();
 
     // Create the output directory
@@ -157,14 +170,16 @@ fn extract_dir(
             "Extracting file: {}",
             file_child_node.borrow().path().display()
         );
-        extract_file(state, file_child_node.clone(), output_dir.clone());
+        extract_file(state, file_child_node.clone(), output_dir.clone())?;
     }
 
     // Extract the directories
     if recursive {
         for dir_child_node in dir_node.children_directories() {
             debug!("Extracting directory: {}", dir_child_node.borrow().name());
-            extract_dir(state, dir_child_node.clone(), output_dir.clone(), recursive);
+            extract_dir(state, dir_child_node.clone(), output_dir.clone(), recursive)?;
         }
     }
+
+    Ok(())
 }

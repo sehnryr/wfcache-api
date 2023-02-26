@@ -2,6 +2,7 @@ mod args;
 mod shell;
 mod utils;
 
+use anyhow::Result;
 use clap::error::ErrorKind;
 use clap::{Parser, Subcommand};
 use log::{error, info};
@@ -47,7 +48,7 @@ pub struct Cli {
     command: Command,
 }
 
-fn main() -> rustyline::Result<()> {
+fn main() -> Result<()> {
     env_logger::init();
 
     // Parse arguments
@@ -127,7 +128,7 @@ fn main() -> rustyline::Result<()> {
         let mut command_parts = parts;
         command_parts.insert(0, env!("CARGO_PKG_NAME"));
 
-        match Cli::try_parse_from(command_parts.into_iter()) {
+        match match Cli::try_parse_from(command_parts.into_iter()) {
             Ok(command) => match command.command {
                 Command::ChangeDirectory(args) => cd::command(&mut state, args),
                 Command::GetFileContent(args) => get::command(&mut state, args),
@@ -140,8 +141,10 @@ fn main() -> rustyline::Result<()> {
                 ErrorKind::DisplayVersion => println!("{err}"),
                 _ => println!("Invalid command (type 'help' for help)"),
             }),
+        } {
+            Ok(_) => {}
+            Err(err) => println!("{err}"),
         }
-        .unwrap();
 
         // Pad the output
         println!();

@@ -1,7 +1,9 @@
-use crate::shell::{error::PathNotFound, State};
-use crate::utils::path::normalize_path;
+use anyhow::{Error, Result};
 use clap::Parser;
 use std::path::PathBuf;
+
+use crate::shell::{error::PathNotFound, State};
+use crate::utils::path::normalize_path;
 
 /// Change the working directory
 #[derive(Parser, Debug, Clone)]
@@ -10,7 +12,7 @@ pub struct Arguments {
     directory: PathBuf,
 }
 
-pub fn command(state: &mut State, args: Arguments) -> Result<(), Box<dyn std::error::Error>> {
+pub fn command(state: &mut State, args: Arguments) -> Result<()> {
     let directory = normalize_path(&args.directory, &state.current_lotus_dir);
 
     // Get the directory node
@@ -18,7 +20,7 @@ pub fn command(state: &mut State, args: Arguments) -> Result<(), Box<dyn std::er
 
     // Check if the directory exists
     if dir_node.is_none() {
-        return Err(Box::new(PathNotFound));
+        return Err(Error::from(PathNotFound));
     }
 
     // Set the current directory
