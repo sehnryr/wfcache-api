@@ -1,12 +1,10 @@
 use anyhow::{Error, Result};
 use clap::Parser;
 use log::{debug, info, warn};
-use lotus_lib::cache_pair::CachePair;
 use lotus_lib::toc::node::Node;
 use lotus_lib::toc::{DirectoryNode, FileNode};
-use lotus_lib::utils::internal_decompress_post_ensmallening;
 use std::cell::RefCell;
-use std::io::{Seek, Write};
+use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
 
@@ -108,27 +106,16 @@ fn extract_file(
     let file_data: Vec<u8>;
 
     if header.f_cache_image_count > 0 {
-        let cache_image_offset = *header.f_cache_image_offsets.last().unwrap_or(&0);
         let f_cache = state.f_cache.unwrap();
         let file_node = f_cache.get_file_node(file_node.path()).unwrap();
-        let file_node = file_node.borrow();
-        let mut f_cache_reader = std::fs::File::open(f_cache.cache_path()).unwrap();
+        let _file_node = file_node.borrow();
 
-        debug!("Cache offset: {}", file_node.cache_offset() as u64);
-        debug!("Cache image size: {}", file_node.comp_len() as u64);
+        debug!("Cache offset: {}", _file_node.cache_offset() as u64);
+        debug!("Cache image size: {}", _file_node.comp_len() as u64);
         debug!("Real image size: {}", header.size() as u64);
 
-        f_cache_reader
-            .seek(std::io::SeekFrom::Start(
-                file_node.cache_offset() as u64 + cache_image_offset as u64,
-            ))
-            .unwrap();
-
-        file_data = internal_decompress_post_ensmallening(
-            file_node.comp_len() as usize,
-            header.size(),
-            &mut f_cache_reader,
-        )?;
+        let _file_data = f_cache.decompress_data(file_node.clone())?;
+        file_data = _file_data[_file_data.len() - header.size().._file_data.len()].to_vec();
     } else {
         let b_cache = state.b_cache.unwrap();
         let file_node = b_cache.get_file_node(file_node.path()).unwrap();
@@ -170,7 +157,10 @@ fn extract_dir(
             "Extracting file: {}",
             file_child_node.borrow().path().display()
         );
-        extract_file(state, file_child_node.clone(), output_dir.clone())?;
+        match extract_file(state, file_child_node.clone(), output_dir.clone()) {
+            Ok(_) => {}
+            Err(e) => warn!("Error: {}", e),
+        }
     }
 
     // Extract the directories
