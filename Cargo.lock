@@ -367,9 +367,9 @@ dependencies = [
 
 [[package]]
 name = "lotus-lib"
-version = "2.1.0"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b873f8c77fb66b58a5af7b52ac363720883bc7e3e011fa7132f5733698d9fd4d"
+checksum = "95d0c66ffd8d95a873c4a9d6311e7ef050b8634a31b26f73e4365e6e5f46ffa1"
 dependencies = [
  "anyhow",
  "derivative",
