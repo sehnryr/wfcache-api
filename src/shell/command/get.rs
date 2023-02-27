@@ -91,7 +91,7 @@ fn extract_file(
     }
 
     // Create the image
-    let header = Image::from_with_header(header_file_data, header);
+    let header = Image::from_with_header(header_file_data, header)?;
 
     debug!("Header: {:?}", header);
 
