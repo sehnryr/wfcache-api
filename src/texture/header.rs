@@ -1,12 +1,11 @@
 use anyhow::{Error, Result};
 use ddsfile::{
-    AlphaMode, D3D10ResourceDimension, DxgiFormat, FourCC, Header as DDSHeader,
-    Header10 as DDSHeader10, PixelFormatFlags,
+    AlphaMode, D3D10ResourceDimension, DxgiFormat, FourCC, Header, Header10, PixelFormatFlags,
 };
 use derivative::Derivative;
 use std::cmp::max;
 
-use crate::utils::header::Header;
+use crate::utils::metadata::Metadata;
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -84,9 +83,9 @@ impl From<u8> for DDSFormat {
 
 #[derive(Derivative)]
 #[derivative(Debug)]
-pub struct Image {
-    pub header: DDSHeader,
-    pub header10: Option<DDSHeader10>,
+pub struct TextureHeader {
+    pub header: Header,
+    pub header10: Option<Header10>,
 
     #[derivative(Debug = "ignore")]
     pub f_cache_image_count: u8,
@@ -97,10 +96,10 @@ pub struct Image {
     size: usize,
 }
 
-impl Image {
-    pub fn from_with_header<T: Into<Vec<u8>>>(data: T, header: Header) -> Result<Self> {
+impl TextureHeader {
+    pub fn from_with_header<T: Into<Vec<u8>>>(data: T, metadata: Metadata) -> Result<Self> {
         let data = data.into();
-        let data = data[header.size..].to_vec();
+        let data = data[metadata.size..].to_vec();
         let mut data_offset = 0;
 
         // Skip unknown byte
@@ -177,7 +176,7 @@ impl Image {
             (max(1, width >> 2) * max(1, height >> 2) * dds_format.bits_per_pixel()) as usize;
 
         if dds_format == DDSFormat::Uncompressed {
-            let mut header = DDSHeader::default();
+            let mut header = Header::default();
             header.width = width;
             header.height = height;
             header.pitch = Some(width * dds_format.bits_per_pixel() >> 3);
@@ -191,7 +190,7 @@ impl Image {
             header.spf.b_bit_mask = Some(0x000000FF);
             header.spf.a_bit_mask = Some(0xFF000000);
 
-            return Ok(Image::new(
+            return Ok(TextureHeader::new(
                 header,
                 None,
                 f_cache_image_count,
@@ -200,15 +199,14 @@ impl Image {
             ));
         }
 
-        
         let fourcc = dds_format.to_fourcc();
         if fourcc != None && fourcc != Some(FourCC(FourCC::DX10)) {
-            let mut header = DDSHeader::default();
+            let mut header = Header::default();
             header.width = width;
             header.height = height;
             header.spf.fourcc = fourcc;
 
-            return Ok(Image::new(
+            return Ok(TextureHeader::new(
                 header,
                 None,
                 f_cache_image_count,
@@ -219,8 +217,8 @@ impl Image {
 
         let dxgi_format = dds_format.to_dxgi_format();
         if dxgi_format != DxgiFormat::Unknown {
-            let header = DDSHeader::new_dxgi(height, width, None, dxgi_format, None, None, None)?;
-            let header10 = DDSHeader10::new(
+            let header = Header::new_dxgi(height, width, None, dxgi_format, None, None, None)?;
+            let header10 = Header10::new(
                 dxgi_format,
                 false,
                 D3D10ResourceDimension::Texture2D,
@@ -228,7 +226,7 @@ impl Image {
                 AlphaMode::Unknown,
             );
 
-            return Ok(Image::new(
+            return Ok(TextureHeader::new(
                 header,
                 Some(header10),
                 f_cache_image_count,
@@ -245,10 +243,10 @@ impl Image {
     }
 }
 
-impl Image {
+impl TextureHeader {
     pub fn new(
-        header: DDSHeader,
-        header10: Option<DDSHeader10>,
+        header: Header,
+        header10: Option<Header10>,
         f_cache_image_count: u8,
         f_cache_image_offsets: Vec<u32>,
         size: usize,

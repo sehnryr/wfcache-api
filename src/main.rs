@@ -1,6 +1,7 @@
 mod args;
 mod shell;
 mod utils;
+mod texture;
 
 use anyhow::Result;
 use clap::error::ErrorKind;

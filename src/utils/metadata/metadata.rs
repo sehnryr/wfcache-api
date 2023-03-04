@@ -1,7 +1,7 @@
 use derivative::Derivative;
 use serde_json::Value;
 
-use crate::utils::header::arguments::parse_arguments;
+use crate::utils::metadata::arguments::parse_arguments;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum FileType {
@@ -22,7 +22,7 @@ impl From<u32> for FileType {
 
 #[derive(Derivative)]
 #[derivative(Debug)]
-pub struct Header {
+pub struct Metadata {
     pub file_paths: Vec<String>,
     pub arguments: Value,
     pub file_type: FileType,
@@ -32,13 +32,13 @@ pub struct Header {
     pub size: usize,
 }
 
-impl Header {
+impl Metadata {
     pub fn is_supported(&self) -> bool {
         self.file_type != FileType::Unknown
     }
 }
 
-impl Default for Header {
+impl Default for Metadata {
     fn default() -> Self {
         Self {
             file_paths: Vec::new(),
@@ -50,10 +50,10 @@ impl Default for Header {
     }
 }
 
-impl<T: Into<Vec<u8>>> From<T> for Header {
+impl<T: Into<Vec<u8>>> From<T> for Metadata {
     fn from(data: T) -> Self {
         let data = data.into();
-        let mut header = Header::default();
+        let mut metadata = Metadata::default();
 
         // Base offset to skip the hash
         let mut file_paths_offset = 16;
@@ -83,7 +83,7 @@ impl<T: Into<Vec<u8>>> From<T> for Header {
             );
 
             // Add the path to the header
-            header.file_paths.push(path.to_string());
+            metadata.file_paths.push(path.to_string());
 
             // Increment the offset
             file_paths_offset += 4 + path_length as usize;
@@ -106,7 +106,7 @@ impl<T: Into<Vec<u8>>> From<T> for Header {
         file_paths_offset += arguments_length as usize;
 
         // Parse the arguments
-        header.arguments = parse_arguments(raw_arguments);
+        metadata.arguments = parse_arguments(raw_arguments);
 
         // If the arguments length is > 0, then there is a trailing null byte
         if arguments_length > 0 {
@@ -122,13 +122,13 @@ impl<T: Into<Vec<u8>>> From<T> for Header {
         ]);
         file_paths_offset += 4;
 
-        header.raw_type = format!("0x{:X}", file_type);
+        metadata.raw_type = format!("0x{:X}", file_type);
 
-        header.file_type = FileType::from(file_type);
+        metadata.file_type = FileType::from(file_type);
 
         // Set the size
-        header.size = file_paths_offset;
+        metadata.size = file_paths_offset;
 
-        header
+        metadata
     }
 }

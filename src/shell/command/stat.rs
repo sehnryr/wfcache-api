@@ -3,7 +3,7 @@ use clap::Parser;
 use std::path::PathBuf;
 
 use crate::shell::{error::PathNotFound, State};
-use crate::utils::{header::Header, path::normalize_path};
+use crate::utils::{metadata::Metadata, path::normalize_path};
 
 /// Display file status
 #[derive(Parser, Debug, Clone)]
@@ -29,10 +29,10 @@ pub fn command(state: &State, args: Arguments) -> Result<()> {
     let header_file_data = state.h_cache.decompress_data(file_node)?;
 
     // Create the header
-    let header = Header::from(header_file_data);
+    let metadata = Metadata::from(header_file_data);
 
     // Print the header
-    println!("{:#?}", header);
+    println!("{:#?}", metadata);
 
     Ok(())
 }
