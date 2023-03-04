@@ -5,7 +5,7 @@ use ddsfile::{
 use derivative::Derivative;
 use std::cmp::max;
 
-use crate::utils::metadata::Metadata;
+use crate::metadata::Metadata;
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

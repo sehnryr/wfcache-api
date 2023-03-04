@@ -10,9 +10,9 @@ use std::io::{Seek, SeekFrom, Write};
 use std::path::PathBuf;
 use std::rc::Rc;
 
+use crate::metadata::{FileType, Metadata};
 use crate::shell::State;
 use crate::texture::header::TextureHeader;
-use crate::utils::metadata::{FileType, Metadata};
 
 pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: PathBuf) -> Result<()> {
     // Get the decompressed header file data
