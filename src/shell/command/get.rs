@@ -122,19 +122,19 @@ fn extract_file(
 
         if f_cache_offsets.len() != 0 {
             let cache_image_sub_offset = *f_cache_offsets.last().unwrap_or(&0);
-    
+
             let mut f_cache_reader = File::open(f_cache.cache_path()).unwrap();
             let real_cache_image_sub_offset = get_real_cache_image_offset(
                 &mut f_cache_reader,
                 _file_node.cache_offset() as usize,
                 cache_image_sub_offset as usize,
             )?;
-    
+
             debug!("Cache image offset: {}", cache_image_sub_offset);
             debug!("Real cache image offset: {}", real_cache_image_sub_offset);
-    
+
             f_cache_reader.seek(SeekFrom::Current(real_cache_image_sub_offset as i64))?;
-    
+
             file_data = internal_decompress_post_ensmallening(
                 _file_node.comp_len() as usize,
                 header.size() as usize,
