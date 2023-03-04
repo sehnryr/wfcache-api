@@ -163,6 +163,9 @@ fn extract_file(
 
     buffer.write(b"DDS ").unwrap();
     header.header.write(&mut buffer).unwrap();
+    if let Some(header10) = header.header10 {
+        header10.write(&mut buffer).unwrap();
+    }
     buffer.write_all(&file_data).unwrap();
 
     Ok(())

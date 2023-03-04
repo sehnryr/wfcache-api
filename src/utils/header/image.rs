@@ -1,5 +1,8 @@
 use anyhow::{Error, Result};
-use ddsfile::{DxgiFormat, FourCC, Header as DDSHeader, PixelFormatFlags};
+use ddsfile::{
+    AlphaMode, D3D10ResourceDimension, DxgiFormat, FourCC, Header as DDSHeader,
+    Header10 as DDSHeader10, PixelFormatFlags,
+};
 use derivative::Derivative;
 use std::cmp::max;
 
@@ -71,8 +74,8 @@ impl From<u8> for DDSFormat {
             0x03 => DDSFormat::BC3_UNORM,
             0x06 => DDSFormat::BC4_UNORM,
             0x07 => DDSFormat::BC5_UNORM,
-            0x22 => DDSFormat::BC6H_UF16,
-            0x23 => DDSFormat::BC7_UNORM,
+            0x23 => DDSFormat::BC6H_UF16,
+            0x22 => DDSFormat::BC7_UNORM,
             0x0A => DDSFormat::Uncompressed,
             _ => DDSFormat::Unknown,
         }
@@ -83,6 +86,7 @@ impl From<u8> for DDSFormat {
 #[derivative(Debug)]
 pub struct Image {
     pub header: DDSHeader,
+    pub header10: Option<DDSHeader10>,
 
     #[derivative(Debug = "ignore")]
     pub f_cache_image_count: u8,
@@ -189,14 +193,16 @@ impl Image {
 
             return Ok(Image::new(
                 header,
+                None,
                 f_cache_image_count,
                 f_cache_image_offsets,
                 size,
             ));
         }
 
+        
         let fourcc = dds_format.to_fourcc();
-        if fourcc != Some(FourCC(FourCC::NONE)) {
+        if fourcc != None && fourcc != Some(FourCC(FourCC::DX10)) {
             let mut header = DDSHeader::default();
             header.width = width;
             header.height = height;
@@ -204,6 +210,7 @@ impl Image {
 
             return Ok(Image::new(
                 header,
+                None,
                 f_cache_image_count,
                 f_cache_image_offsets,
                 size,
@@ -212,11 +219,18 @@ impl Image {
 
         let dxgi_format = dds_format.to_dxgi_format();
         if dxgi_format != DxgiFormat::Unknown {
-            let header =
-                DDSHeader::new_dxgi(height, width, None, dxgi_format, None, None, None).unwrap();
+            let header = DDSHeader::new_dxgi(height, width, None, dxgi_format, None, None, None)?;
+            let header10 = DDSHeader10::new(
+                dxgi_format,
+                false,
+                D3D10ResourceDimension::Texture2D,
+                1,
+                AlphaMode::Unknown,
+            );
 
             return Ok(Image::new(
                 header,
+                Some(header10),
                 f_cache_image_count,
                 f_cache_image_offsets,
                 size,
@@ -234,12 +248,14 @@ impl Image {
 impl Image {
     pub fn new(
         header: DDSHeader,
+        header10: Option<DDSHeader10>,
         f_cache_image_count: u8,
         f_cache_image_offsets: Vec<u32>,
         size: usize,
     ) -> Self {
         Self {
             header,
+            header10,
             f_cache_image_count,
             f_cache_image_offsets,
             size,
