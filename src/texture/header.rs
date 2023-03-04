@@ -204,7 +204,9 @@ impl TextureHeader {
             let mut header = Header::default();
             header.width = width;
             header.height = height;
+
             header.spf.fourcc = fourcc;
+            header.spf.flags.insert(PixelFormatFlags::FOURCC);
 
             return Ok(TextureHeader::new(
                 header,
