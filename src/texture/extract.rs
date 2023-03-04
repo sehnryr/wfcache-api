@@ -29,7 +29,7 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
             file_node.name()
         )));
     }
-    if ![FileType::Image, FileType::PBRMap].contains(&metadata.file_type) {
+    if metadata.file_type != FileType::Texture {
         return Err(Error::msg(format!(
             "File is not an image: {}",
             file_node.name()
