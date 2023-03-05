@@ -46,17 +46,18 @@ pub fn command(state: &mut State, args: Arguments) -> Result<()> {
     std::fs::create_dir_all(output_dir.clone()).unwrap();
 
     // Extract the file or directory
-    match if is_file {
-        extract(state, file_node.unwrap(), output_dir)
+    if is_file {
+        let file_path = file_node.clone().unwrap().borrow().path();
+        match extract(state, file_node.unwrap(), output_dir) {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                warn!("Error ({}): {}", file_path.display(), e);
+                Err(e)
+            }
+        }
     } else {
         output_dir.pop();
         extract_dir(state, dir_node.unwrap(), output_dir, args.recursive)
-    } {
-        Ok(_) => Ok(()),
-        Err(e) => {
-            warn!("Error: {}", e);
-            Err(e)
-        }
     }
 }
 
@@ -75,13 +76,11 @@ fn extract_dir(
 
     // Extract the files
     for file_child_node in dir_node.children_files() {
-        info!(
-            "Extracting file: {}",
-            file_child_node.borrow().path().display()
-        );
+        let file_path = file_child_node.borrow().path();
+        info!("Extracting file: {}", file_path.display());
         match extract(state, file_child_node.clone(), output_dir.clone()) {
             Ok(_) => {}
-            Err(e) => warn!("Error: {}", e),
+            Err(e) => warn!("Error ({}): {}", file_path.display(), e),
         }
     }
 
