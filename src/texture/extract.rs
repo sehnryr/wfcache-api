@@ -1,4 +1,4 @@
-use anyhow::{Error, Result};
+use anyhow::Result;
 use log::debug;
 use lotus_lib::cache_pair::CachePair;
 use lotus_lib::toc::node::Node;
@@ -10,7 +10,7 @@ use std::io::{Seek, SeekFrom, Write};
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use crate::metadata::{FileType, Metadata};
+use crate::metadata::Metadata;
 use crate::shell::State;
 use crate::texture::header::TextureHeader;
 
@@ -19,22 +19,8 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
     let header_file_data = state.h_cache.decompress_data(file_node.clone())?;
     let file_node = file_node.borrow();
 
-    // Create the header
+    // Create the metadata
     let metadata = Metadata::from(header_file_data.clone());
-
-    // Check if the file is supported
-    if !metadata.is_supported() {
-        return Err(Error::msg(format!(
-            "File is not supported: {}",
-            file_node.name()
-        )));
-    }
-    if metadata.file_type != FileType::Texture {
-        return Err(Error::msg(format!(
-            "File is not an image: {}",
-            file_node.name()
-        )));
-    }
 
     // Create the image
     let header = TextureHeader::from_with_header(header_file_data, metadata)?;
