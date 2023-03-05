@@ -2,13 +2,15 @@ use anyhow::{Error, Result};
 use clap::Parser;
 use log::{debug, info, warn};
 use lotus_lib::toc::node::Node;
-use lotus_lib::toc::DirectoryNode;
+use lotus_lib::toc::{DirectoryNode, FileNode};
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+use crate::metadata::{FileType, Metadata};
+use crate::music::extract as extract_music;
 use crate::shell::{error::PathNotFound, State};
-use crate::texture::extract;
+use crate::texture::extract as extract_texture;
 use crate::utils::path::normalize_path;
 
 /// Extract a file from the cache or a directory recursively
@@ -48,7 +50,7 @@ pub fn command(state: &mut State, args: Arguments) -> Result<()> {
     // Extract the file or directory
     if is_file {
         let file_path = file_node.clone().unwrap().borrow().path();
-        match extract(state, file_node.unwrap(), output_dir) {
+        match extract_file(state, file_node.unwrap(), output_dir) {
             Ok(_) => Ok(()),
             Err(e) => {
                 warn!("Error ({}): {}", file_path.display(), e);
@@ -58,6 +60,24 @@ pub fn command(state: &mut State, args: Arguments) -> Result<()> {
     } else {
         output_dir.pop();
         extract_dir(state, dir_node.unwrap(), output_dir, args.recursive)
+    }
+}
+
+fn extract_file(
+    state: &State,
+    file_node: Rc<RefCell<FileNode>>,
+    output_dir: PathBuf,
+) -> Result<()> {
+    let header_file_data = state.h_cache.decompress_data(file_node.clone())?;
+    let metadata = Metadata::from(header_file_data.clone());
+
+    match metadata.file_type {
+        FileType::Music => extract_music(state, file_node, output_dir),
+        FileType::Texture => extract_texture(state, file_node, output_dir),
+        _ => Err(Error::msg(format!(
+            "File is not supported: {}",
+            file_node.borrow().name()
+        ))),
     }
 }
 
@@ -78,7 +98,7 @@ fn extract_dir(
     for file_child_node in dir_node.children_files() {
         let file_path = file_child_node.borrow().path();
         info!("Extracting file: {}", file_path.display());
-        match extract(state, file_child_node.clone(), output_dir.clone()) {
+        match extract_file(state, file_child_node.clone(), output_dir.clone()) {
             Ok(_) => {}
             Err(e) => warn!("Error ({}): {}", file_path.display(), e),
         }
