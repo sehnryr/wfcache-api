@@ -9,6 +9,7 @@ from Warframe's cache files programmatically.
 - [x] move around directories
 - [x] extract a specific file (see [supported formats](#supported-formats) below)
 - [x] extract a directory and all its files and subdirectories recursively
+- [x] find files or directories by name (case-sensitive)
 
 ## Shell ergonomics
 

@@ -13,7 +13,7 @@ use lotus_lib::package::{PackageCollection, PackageTrioType};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-use crate::shell::command::{cd, get, ls, pwd, stat};
+use crate::shell::command::{cd, find, get, ls, pwd, stat};
 use crate::shell::State;
 
 /// The enum of sub-commands supported by the CLI
@@ -22,6 +22,10 @@ pub enum Command {
     /// Change the current working directory
     #[clap(name = "cd")]
     ChangeDirectory(cd::Arguments),
+
+    /// Find a file or directory
+    #[clap(name = "find")]
+    FindFileOrDirectory(find::Arguments),
 
     /// Get the contents of a file
     #[clap(name = "get")]
@@ -133,6 +137,7 @@ fn main() -> Result<()> {
         match match Cli::try_parse_from(command_parts.into_iter()) {
             Ok(command) => match command.command {
                 Command::ChangeDirectory(args) => cd::command(&mut state, args),
+                Command::FindFileOrDirectory(args) => find::command(&mut state, args),
                 Command::GetFileContent(args) => get::command(&mut state, args),
                 Command::ListDirectoryContents(args) => ls::command(&mut state, args),
                 Command::PrintFileMetadata(args) => stat::command(&mut state, args),
