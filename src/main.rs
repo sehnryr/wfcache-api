@@ -95,6 +95,12 @@ fn main() -> Result<()> {
     // Initialize the state
     let mut state = State::new(args.directory, h_cache.unwrap(), f_cache, b_cache);
 
+    // If the user specified a command, execute it and exit
+    if let Some(command) = args.command {
+        parse_command(&mut state, command.as_str())?;
+        return Ok(());
+    }
+
     let mut rl = Editor::<()>::new()?;
     let prompt = "wfcache-api$ ";
 
@@ -131,31 +137,36 @@ fn main() -> Result<()> {
         // Add the line to the history
         rl.add_history_entry(line);
 
-        let mut command_parts = parts;
-        command_parts.insert(0, env!("CARGO_PKG_NAME"));
-
-        match match Cli::try_parse_from(command_parts.into_iter()) {
-            Ok(command) => match command.command {
-                Command::ChangeDirectory(args) => cd::command(&mut state, args),
-                Command::FindFileOrDirectory(args) => find::command(&mut state, args),
-                Command::GetFileContent(args) => get::command(&mut state, args),
-                Command::ListDirectoryContents(args) => ls::command(&mut state, args),
-                Command::PrintFileMetadata(args) => stat::command(&mut state, args),
-                Command::PrintWorkingDirectory(args) => pwd::command(&mut state, args),
-            },
-            Err(err) => Ok(match clap::Error::kind(&err) {
-                ErrorKind::DisplayHelp => println!("{err}"),
-                ErrorKind::DisplayVersion => println!("{err}"),
-                _ => println!("Invalid command (type 'help' for help)"),
-            }),
-        } {
-            Ok(_) => {}
-            Err(err) => println!("{err}"),
-        }
+        // Parse the command
+        parse_command(&mut state, line)?;
 
         // Pad the output
         println!();
     }
 
     Ok(())
+}
+
+fn parse_command(state: &mut State, line: &str) -> Result<()> {
+    // Trim the line
+    let line: &str = line.trim();
+
+    let mut command_parts = line.split(' ').collect::<Vec<&str>>();
+    command_parts.insert(0, env!("CARGO_PKG_NAME"));
+
+    match Cli::try_parse_from(command_parts.into_iter()) {
+        Ok(command) => match command.command {
+            Command::ChangeDirectory(args) => cd::command(state, args),
+            Command::FindFileOrDirectory(args) => find::command(state, args),
+            Command::GetFileContent(args) => get::command(state, args),
+            Command::ListDirectoryContents(args) => ls::command(state, args),
+            Command::PrintFileMetadata(args) => stat::command(state, args),
+            Command::PrintWorkingDirectory(args) => pwd::command(state, args),
+        },
+        Err(err) => Ok(match clap::Error::kind(&err) {
+            ErrorKind::DisplayHelp => println!("{err}"),
+            ErrorKind::DisplayVersion => println!("{err}"),
+            _ => println!("Invalid command (type 'help' for help)"),
+        }),
+    }
 }
