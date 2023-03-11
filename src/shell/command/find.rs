@@ -27,7 +27,7 @@ impl std::str::FromStr for NodeKind {
     }
 }
 
-/// List the content of a directory
+/// Find a file or directory
 #[derive(Parser, Debug, Clone)]
 pub struct Arguments {
     /// The directory to search in
@@ -38,7 +38,7 @@ pub struct Arguments {
     #[arg(short, long)]
     recursive: bool,
 
-    /// The name of the node to search for
+    /// The name of the node to search for (supports wildcards)
     #[arg(short, long)]
     name: String,
 
@@ -77,7 +77,27 @@ fn internal_find(state: &State, dir_node: Rc<RefCell<DirectoryNode>>, args: &Arg
 
     // Add directories
     for child_directory in dir_node.children_directories() {
-        if child_directory.borrow().name() == args.name {
+        // Split name by '*'
+        let name_parts: Vec<&str> = args.name.split('*').collect();
+
+        // Check if the name matches
+        let mut name_matches = true;
+        for (i, name_part) in name_parts.iter().enumerate() {
+            if i == 0 && !child_directory.borrow().name().starts_with(name_part) {
+                name_matches = false;
+                break;
+            } else if i == name_parts.len() - 1
+                && !child_directory.borrow().name().ends_with(name_part)
+            {
+                name_matches = false;
+                break;
+            } else if !child_directory.borrow().name().contains(name_part) {
+                name_matches = false;
+                break;
+            }
+        }
+
+        if name_matches {
             nodes.push((NodeKind::Directory, child_directory.borrow().path()));
         }
         internal_find(state, child_directory, args);
@@ -85,7 +105,26 @@ fn internal_find(state: &State, dir_node: Rc<RefCell<DirectoryNode>>, args: &Arg
 
     // Add files
     for child_file in dir_node.children_files() {
-        if child_file.borrow().name() == args.name {
+        // Split name by '*'
+        let name_parts: Vec<&str> = args.name.split('*').collect();
+
+        // Check if the name matches
+        let mut name_matches = true;
+        for (i, name_part) in name_parts.iter().enumerate() {
+            if i == 0 && !child_file.borrow().name().starts_with(name_part) {
+                name_matches = false;
+                break;
+            } else if i == name_parts.len() - 1 && !child_file.borrow().name().ends_with(name_part)
+            {
+                name_matches = false;
+                break;
+            } else if !child_file.borrow().name().contains(name_part) {
+                name_matches = false;
+                break;
+            }
+        }
+
+        if name_matches {
             nodes.push((NodeKind::File, child_file.borrow().path()));
         }
     }
