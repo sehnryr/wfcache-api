@@ -1,13 +1,13 @@
 use derivative::Derivative;
 use serde_json::Value;
 
+use crate::audio::AudioType;
 use crate::metadata::arguments::parse_arguments;
-use crate::music::MusicType;
 use crate::texture::TextureType;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum FileType {
-    Music,
+    Audio,
     Texture,
     Unknown,
 }
@@ -15,7 +15,7 @@ pub enum FileType {
 impl From<u32> for FileType {
     fn from(file_type: u32) -> Self {
         match file_type {
-            MusicType::MUSIC_139 => FileType::Music,
+            AudioType::AUDIO_139 => FileType::Audio,
             TextureType::DIFFUSE_EMISSION_TINT => FileType::Texture,
             TextureType::BILLBOARD_SPRITEMAP_DIFFUSE => FileType::Texture,
             TextureType::BILLBOARD_SPRITEMAP_NORMAL => FileType::Texture,

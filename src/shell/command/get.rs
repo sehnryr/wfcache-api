@@ -7,8 +7,8 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+use crate::audio::extract as extract_audio;
 use crate::metadata::{FileType, Metadata};
-use crate::music::extract as extract_music;
 use crate::shell::{error::PathNotFound, State};
 use crate::texture::extract as extract_texture;
 use crate::utils::path::normalize_path;
@@ -72,7 +72,7 @@ fn extract_file(
     let metadata = Metadata::from(header_file_data.clone());
 
     match metadata.file_type {
-        FileType::Music => extract_music(state, file_node, output_dir),
+        FileType::Audio => extract_audio(state, file_node, output_dir),
         FileType::Texture => extract_texture(state, file_node, output_dir),
         _ => Err(Error::msg(format!(
             "File is not supported: {}",
