@@ -1,6 +1,6 @@
 mod args;
+mod audio;
 mod metadata;
-mod music;
 mod shell;
 mod texture;
 mod utils;
