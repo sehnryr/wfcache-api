@@ -10,4 +10,8 @@ pub struct Args {
     /// Package to search for
     #[arg(short, long, default_value = "Misc")]
     pub package: String,
+
+    /// Execute a command without opening the shell
+    #[arg(short, long)]
+    pub command: Option<String>,
 }
