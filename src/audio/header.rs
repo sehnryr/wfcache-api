@@ -3,7 +3,7 @@ use anyhow::{Error, Result};
 use crate::metadata::Metadata;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum AudioCompressionFormat {
+pub enum AudioCompressionFormat {
     PCM,
     ADPCM,
     Unknown,
@@ -20,7 +20,8 @@ impl From<u32> for AudioCompressionFormat {
 }
 
 #[derive(Debug)]
-pub struct ADPCMHeader {
+pub struct AudioHeader {
+    pub format_tag: AudioCompressionFormat,
     pub samples_per_second: u32,
     pub bits_per_sample: u8,
     pub channels: u8,
@@ -31,7 +32,7 @@ pub struct ADPCMHeader {
     pub size: u32,
 }
 
-impl ADPCMHeader {
+impl AudioHeader {
     pub fn from_with_metadata<T: Into<Vec<u8>>>(data: T, metadata: Metadata) -> Result<Self> {
         let data = data.into();
         let data = data[metadata.size..].to_vec();
@@ -49,9 +50,8 @@ impl ADPCMHeader {
         ]));
         data_offset += 4;
 
-        // If the format tag is not supported, return an error
-        if format_tag != AudioCompressionFormat::ADPCM {
-            return Err(Error::msg("Unsupported audio compression format"));
+        if format_tag == AudioCompressionFormat::Unknown {
+            return Err(Error::msg("Unknown audio compression format"));
         }
 
         // Skip unknown 24 bytes
@@ -106,6 +106,7 @@ impl ADPCMHeader {
         ]);
 
         Ok(Self {
+            format_tag,
             samples_per_second,
             bits_per_sample,
             channels,
@@ -123,5 +124,32 @@ impl ADPCMHeader {
             ],
             size,
         })
+    }
+
+    pub fn to_wav_adpcm(self) -> Result<Vec<u8>> {
+        let mut data = Vec::new();
+
+        data.extend_from_slice(&[0x52, 0x49, 0x46, 0x46]); // "RIFF"
+        data.extend_from_slice(&(self.size + 66).to_le_bytes()); // Size of the file minus 12 bytes
+        data.extend_from_slice(&[0x57, 0x41, 0x56, 0x45]); // "WAVE"
+        data.extend_from_slice(&[0x66, 0x6d, 0x74, 0x20]); // "fmt "
+        data.extend_from_slice(&50u32.to_le_bytes()); // Size of the format chunk
+        data.extend_from_slice(&0x02u16.to_le_bytes()); // Format tag
+        data.extend_from_slice(&(self.channels as u16).to_le_bytes()); // Channels
+        data.extend_from_slice(&self.samples_per_second.to_le_bytes()); // Samples per second
+        data.extend_from_slice(&self.average_bytes_per_second.to_le_bytes()); // Average bytes per second
+        data.extend_from_slice(&self.block_align.to_le_bytes()); // Block align
+        data.extend_from_slice(&(self.bits_per_sample as u16).to_le_bytes()); // Bits per sample
+        data.extend_from_slice(&32u16.to_le_bytes()); // Size of the extension
+        data.extend_from_slice(&self.samples_per_block.to_le_bytes()); // Samples per block
+        data.extend_from_slice(&7u16.to_le_bytes()); // Number of coefficients
+        for coefficient in self.coefficients.iter() {
+            data.extend_from_slice(&coefficient[0].to_le_bytes()); // Coefficient 1
+            data.extend_from_slice(&coefficient[1].to_le_bytes()); // Coefficient 2
+        }
+        data.extend_from_slice(&[0x64, 0x61, 0x74, 0x61]); // "data"
+        data.extend_from_slice(&self.size.to_le_bytes()); // Size of the data chunk
+
+        Ok(data)
     }
 }
