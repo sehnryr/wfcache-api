@@ -32,8 +32,7 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
     let mut output_path = output_dir.clone();
     output_path.push(file_name);
 
-    if header.format_tag == AudioCompressionFormat::ADPCM1
-        || header.format_tag == AudioCompressionFormat::ADPCM2
+    if header.format_tag == AudioCompressionFormat::ADPCM
     {
         output_path.set_extension("wav");
 
@@ -76,11 +75,7 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
 
         debug!("Real audio size: {}", header.size as u64);
 
-        if file_data.len() != header.size as usize {
-            return Err(Error::msg("File data size does not match header size"));
-        }
-
-        let file_data = file_data[..header.size as usize].to_vec();
+        let file_data = file_data[(file_data.len() - header.size as usize)..].to_vec();
 
         // Write the file
         let mut buffer = std::fs::File::create(output_path)?;
@@ -89,8 +84,7 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
         buffer.write_all(&file_data)?;
 
         return Ok(());
-    } else if header.format_tag == AudioCompressionFormat::Opus0
-        || header.format_tag == AudioCompressionFormat::Opus1
+    } else if header.format_tag == AudioCompressionFormat::Opus
     {
         output_path.set_extension("opus");
 
@@ -134,10 +128,6 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
         }
 
         debug!("Real audio size: {}", header.size as u64);
-
-        if file_data.len() != header.size as usize {
-            return Err(Error::msg("File data size does not match header size"));
-        }
 
         let file_data = file_data[..header.size as usize].to_vec();
 

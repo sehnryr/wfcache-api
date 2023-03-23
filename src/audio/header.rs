@@ -6,10 +6,19 @@ use crate::metadata::Metadata;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AudioCompressionFormat {
-    Opus0,
-    Opus1,
-    ADPCM1,
-    ADPCM2,
+    ADPCM,
+    Opus,
+    Unknown,
+}
+
+impl From<u32> for AudioCompressionFormat {
+    fn from(value: u32) -> Self {
+        match value {
+            0x05 => AudioCompressionFormat::ADPCM,
+            0x07 => AudioCompressionFormat::Opus,
+            _ => AudioCompressionFormat::Unknown,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -38,31 +47,18 @@ impl AudioHeader {
             data[data_offset + 2],
             data[data_offset + 3],
         ]);
-        data_offset += 4;
+        let format_tag = AudioCompressionFormat::from(enum1);
 
-        let enum2 = u32::from_le_bytes([
-            data[data_offset],
-            data[data_offset + 1],
-            data[data_offset + 2],
-            data[data_offset + 3],
-        ]);
-        data_offset += 4;
-
-        let format_tag;
-        if enum1 == 0x05 && enum2 == 0x01 {
-            format_tag = AudioCompressionFormat::ADPCM1;
-        } else if enum1 == 0x05 && enum2 == 0x02 {
-            format_tag = AudioCompressionFormat::ADPCM2;
-        } else if enum1 == 0x07 && enum2 == 0x00 {
-            format_tag = AudioCompressionFormat::Opus0;
-        } else if enum1 == 0x07 && enum2 == 0x01 {
-            format_tag = AudioCompressionFormat::Opus1;
-        } else {
+        if format_tag == AudioCompressionFormat::Unknown {
             return Err(Error::msg(format!(
-                "Unknown audio compression format: {:?} {:?}",
-                enum1, enum2
+                "Unknown audio compression format: 0x{:X}",
+                enum1
             )));
         }
+        data_offset += 4;
+
+        // Skip unknown 4 bytes
+        data_offset += 4;
 
         // Skip unknown 24 bytes
         data_offset += 24;
