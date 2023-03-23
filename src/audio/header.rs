@@ -6,6 +6,7 @@ use crate::metadata::Metadata;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AudioCompressionFormat {
+    PCM,
     ADPCM,
     Opus,
     Unknown,
@@ -14,6 +15,7 @@ pub enum AudioCompressionFormat {
 impl From<u32> for AudioCompressionFormat {
     fn from(value: u32) -> Self {
         match value {
+            0x00 => AudioCompressionFormat::PCM,
             0x05 => AudioCompressionFormat::ADPCM,
             0x07 => AudioCompressionFormat::Opus,
             _ => AudioCompressionFormat::Unknown,
@@ -122,6 +124,29 @@ impl AudioHeader {
             samples_per_block,
             size,
         })
+    }
+
+    pub fn to_wav_pcm(self) -> Result<Vec<u8>> {
+        let block_align = (self.channels * self.bits_per_sample) as u16 >> 3;
+        let average_bytes_per_second = self.samples_per_second * block_align as u32;
+
+        let mut data = Vec::new();
+
+        data.extend_from_slice(&[0x52, 0x49, 0x46, 0x46]); // "RIFF"
+        data.extend_from_slice(&(self.size + 32).to_le_bytes()); // Size of the file minus 12 bytes
+        data.extend_from_slice(&[0x57, 0x41, 0x56, 0x45]); // "WAVE"
+        data.extend_from_slice(&[0x66, 0x6d, 0x74, 0x20]); // "fmt "
+        data.extend_from_slice(&16u32.to_le_bytes()); // Size of the format chunk
+        data.extend_from_slice(&0x01u16.to_le_bytes()); // Format tag
+        data.extend_from_slice(&(self.channels as u16).to_le_bytes()); // Channels
+        data.extend_from_slice(&self.samples_per_second.to_le_bytes()); // Samples per second
+        data.extend_from_slice(&average_bytes_per_second.to_le_bytes()); // Average bytes per second
+        data.extend_from_slice(&block_align.to_le_bytes()); // Block align
+        data.extend_from_slice(&(self.bits_per_sample as u16).to_le_bytes()); // Bits per sample
+        data.extend_from_slice(&[0x64, 0x61, 0x74, 0x61]); // "data"
+        data.extend_from_slice(&self.size.to_le_bytes()); // Size of the data chunk
+
+        Ok(data)
     }
 
     pub fn to_wav_adpcm(self) -> Result<Vec<u8>> {

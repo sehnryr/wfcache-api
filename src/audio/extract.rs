@@ -32,8 +32,7 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
     let mut output_path = output_dir.clone();
     output_path.push(file_name);
 
-    if header.format_tag == AudioCompressionFormat::ADPCM
-    {
+    if [AudioCompressionFormat::PCM, AudioCompressionFormat::ADPCM].contains(&header.format_tag) {
         output_path.set_extension("wav");
 
         // Get the file data
@@ -80,12 +79,16 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
         // Write the file
         let mut buffer = std::fs::File::create(output_path)?;
 
-        buffer.write_all(&header.to_wav_adpcm().unwrap())?;
+        if header.format_tag == AudioCompressionFormat::PCM {
+            buffer.write_all(&header.to_wav_pcm().unwrap())?;
+        } else if header.format_tag == AudioCompressionFormat::ADPCM {
+            buffer.write_all(&header.to_wav_adpcm().unwrap())?;
+        }
+
         buffer.write_all(&file_data)?;
 
         return Ok(());
-    } else if header.format_tag == AudioCompressionFormat::Opus
-    {
+    } else if header.format_tag == AudioCompressionFormat::Opus {
         output_path.set_extension("opus");
 
         // Get the file data
