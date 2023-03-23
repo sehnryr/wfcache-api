@@ -1,5 +1,6 @@
 use anyhow::{Error, Ok, Result};
 use log::debug;
+use lotus_lib::cache_pair::CachePairReader;
 use lotus_lib::toc::node::Node;
 use lotus_lib::toc::FileNode;
 use std::cell::RefCell;
@@ -55,17 +56,24 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
         buffer.write_all(&file_data)?;
 
         return Ok(());
-    } else if header.format_tag == AudioCompressionFormat::PCM {
+    } else if header.format_tag == AudioCompressionFormat::Opus0
+        || header.format_tag == AudioCompressionFormat::Opus1
+    {
         output_path.set_extension("opus");
 
         // Get the file data
-        let f_cache = state.f_cache.unwrap();
-        let file_node = f_cache.get_file_node(file_node.path()).unwrap();
+        let cache: &CachePairReader;
+        if header.format_tag == AudioCompressionFormat::Opus0 {
+            cache = state.b_cache.unwrap();
+        } else {
+            cache = state.f_cache.unwrap();
+        }
+        let file_node = cache.get_file_node(file_node.path()).unwrap();
         let _file_node = file_node.borrow();
 
         debug!("Cache offset: {}", _file_node.cache_offset() as u64);
 
-        let file_data = f_cache.decompress_data(file_node.clone())?;
+        let file_data = cache.decompress_data(file_node.clone())?;
         let file_data = file_data[..header.size as usize].to_vec();
 
         // Write the file
@@ -78,7 +86,7 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
         let mut granule_position = header.samples_per_second as u64;
 
         let chunk_size =
-            header.block_align as usize * if header.block_align >= 255 { 50 } else { 100 };
+            header.block_align as usize * 50;
 
         for chunk in file_data.chunks(chunk_size) {
             let header_type = if chunk.len() < chunk_size { 0x04 } else { 0x00 };
