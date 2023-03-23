@@ -1,6 +1,5 @@
 use anyhow::{Error, Ok, Result};
 use log::debug;
-use lotus_lib::cache_pair::CachePairReader;
 use lotus_lib::toc::node::Node;
 use lotus_lib::toc::FileNode;
 use std::cell::RefCell;
@@ -33,12 +32,14 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
     let mut output_path = output_dir.clone();
     output_path.push(file_name);
 
-    if header.format_tag == AudioCompressionFormat::ADPCM {
+    if header.format_tag == AudioCompressionFormat::ADPCM1
+        || header.format_tag == AudioCompressionFormat::ADPCM2
+    {
         output_path.set_extension("wav");
 
         // Get the file data
-        let b_cache = state.b_cache.unwrap();
-        let file_node = b_cache.get_file_node(file_node.path()).unwrap();
+        let cache = state.f_cache.unwrap();
+        let file_node = cache.get_file_node(file_node.path()).unwrap();
         let _file_node = file_node.borrow();
 
         debug!("Cache offset: {}", _file_node.cache_offset() as u64);
@@ -46,7 +47,7 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
         debug!("Real audio size: {}", header.size as u64);
         debug!("Decompressed audio size: {}", _file_node.len() as u64);
 
-        let file_data = b_cache.decompress_data(file_node.clone())?;
+        let file_data = cache.decompress_data(file_node.clone())?;
         let file_data = file_data[..header.size as usize].to_vec();
 
         // Write the file
@@ -62,7 +63,7 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
         output_path.set_extension("opus");
 
         // Get the file data
-        let cache: &CachePairReader;
+        let cache;
         if header.format_tag == AudioCompressionFormat::Opus0 {
             cache = state.b_cache.unwrap();
         } else {
@@ -85,8 +86,7 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
         let mut page_sequence_number = 2;
         let mut granule_position = header.samples_per_second as u64;
 
-        let chunk_size =
-            header.block_align as usize * 50;
+        let chunk_size = header.block_align as usize * 50;
 
         for chunk in file_data.chunks(chunk_size) {
             let header_type = if chunk.len() < chunk_size { 0x04 } else { 0x00 };

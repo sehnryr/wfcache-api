@@ -8,19 +8,8 @@ use crate::metadata::Metadata;
 pub enum AudioCompressionFormat {
     Opus0,
     Opus1,
-    ADPCM,
-    Unknown,
-}
-
-impl From<u32> for AudioCompressionFormat {
-    fn from(value: u32) -> Self {
-        match value {
-            0x00 => AudioCompressionFormat::Opus0,
-            0x01 => AudioCompressionFormat::Opus1,
-            0x02 => AudioCompressionFormat::ADPCM,
-            _ => AudioCompressionFormat::Unknown,
-        }
-    }
+    ADPCM1,
+    ADPCM2,
 }
 
 #[derive(Clone, Debug)]
@@ -42,19 +31,33 @@ impl AudioHeader {
         let data = data[metadata.size..].to_vec();
         let mut data_offset = 0;
 
-        // Skip unknown u32
-        data_offset += 4;
-
-        // Read the format tag (audio compression format)
-        let format_tag = AudioCompressionFormat::from(u32::from_le_bytes([
+        // Get the audio compression format
+        let enum1 = u32::from_le_bytes([
             data[data_offset],
             data[data_offset + 1],
             data[data_offset + 2],
             data[data_offset + 3],
-        ]));
+        ]);
         data_offset += 4;
 
-        if format_tag == AudioCompressionFormat::Unknown {
+        let enum2 = u32::from_le_bytes([
+            data[data_offset],
+            data[data_offset + 1],
+            data[data_offset + 2],
+            data[data_offset + 3],
+        ]);
+        data_offset += 4;
+
+        let format_tag;
+        if enum1 == 0x05 && enum2 == 0x01 {
+            format_tag = AudioCompressionFormat::ADPCM1;
+        } else if enum1 == 0x05 && enum2 == 0x02 {
+            format_tag = AudioCompressionFormat::ADPCM2;
+        } else if enum1 == 0x07 && enum2 == 0x00 {
+            format_tag = AudioCompressionFormat::Opus0;
+        } else if enum1 == 0x07 && enum2 == 0x01 {
+            format_tag = AudioCompressionFormat::Opus1;
+        } else {
             return Err(Error::msg("Unknown audio compression format"));
         }
 
@@ -147,7 +150,9 @@ impl AudioHeader {
             [240, 0],
             [460, -208],
             [392, -232],
-        ].iter() {
+        ]
+        .iter()
+        {
             data.extend_from_slice(&(coefficient[0] as i16).to_le_bytes()); // Coefficient 1
             data.extend_from_slice(&(coefficient[1] as i16).to_le_bytes()); // Coefficient 2
         }
