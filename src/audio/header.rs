@@ -28,7 +28,6 @@ pub struct AudioHeader {
     pub average_bytes_per_second: u32,
     pub block_align: u16,
     pub samples_per_block: u16,
-    pub coefficients: [[i16; 2]; 7],
     pub size: u32,
 }
 
@@ -113,15 +112,6 @@ impl AudioHeader {
             average_bytes_per_second,
             block_align,
             samples_per_block,
-            coefficients: [
-                [256, 0],
-                [512, -256],
-                [0, 0],
-                [192, 64],
-                [240, 0],
-                [460, -208],
-                [392, -232],
-            ],
             size,
         })
     }
@@ -143,9 +133,17 @@ impl AudioHeader {
         data.extend_from_slice(&32u16.to_le_bytes()); // Size of the extension
         data.extend_from_slice(&self.samples_per_block.to_le_bytes()); // Samples per block
         data.extend_from_slice(&7u16.to_le_bytes()); // Number of coefficients
-        for coefficient in self.coefficients.iter() {
-            data.extend_from_slice(&coefficient[0].to_le_bytes()); // Coefficient 1
-            data.extend_from_slice(&coefficient[1].to_le_bytes()); // Coefficient 2
+        for coefficient in [
+            [256, 0],
+            [512, -256],
+            [0, 0],
+            [192, 64],
+            [240, 0],
+            [460, -208],
+            [392, -232],
+        ].iter() {
+            data.extend_from_slice(&(coefficient[0] as i16).to_le_bytes()); // Coefficient 1
+            data.extend_from_slice(&(coefficient[1] as i16).to_le_bytes()); // Coefficient 2
         }
         data.extend_from_slice(&[0x64, 0x61, 0x74, 0x61]); // "data"
         data.extend_from_slice(&self.size.to_le_bytes()); // Size of the data chunk
