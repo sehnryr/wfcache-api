@@ -43,9 +43,7 @@ pub fn command(state: &mut State, args: Arguments) -> Result<()> {
         output_dir.pop();
     }
 
-    // Create output directory
     debug!("Output directory: {:?}", output_dir);
-    std::fs::create_dir_all(output_dir.clone()).unwrap();
 
     // Extract the file or directory
     if is_file {
@@ -72,8 +70,14 @@ fn extract_file(
     let metadata = Metadata::from(header_file_data.clone());
 
     match metadata.file_type {
-        FileType::Audio => extract_audio(state, file_node, output_dir),
-        FileType::Texture => extract_texture(state, file_node, output_dir),
+        FileType::Audio => {
+            std::fs::create_dir_all(output_dir.clone()).unwrap();
+            extract_audio(state, file_node, output_dir)
+        }
+        FileType::Texture => {
+            std::fs::create_dir_all(output_dir.clone()).unwrap();
+            extract_texture(state, file_node, output_dir)
+        }
         _ => Err(Error::msg(format!(
             "File is not supported: {}",
             file_node.borrow().name()
@@ -92,7 +96,6 @@ fn extract_dir(
     // Create the output directory
     let mut output_dir = output_dir.clone();
     output_dir.push(dir_node.name());
-    std::fs::create_dir_all(output_dir.clone()).unwrap();
 
     // Extract the files
     for file_child_node in dir_node.children_files() {
