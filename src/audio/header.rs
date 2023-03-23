@@ -58,7 +58,10 @@ impl AudioHeader {
         } else if enum1 == 0x07 && enum2 == 0x01 {
             format_tag = AudioCompressionFormat::Opus1;
         } else {
-            return Err(Error::msg("Unknown audio compression format"));
+            return Err(Error::msg(format!(
+                "Unknown audio compression format: {:?} {:?}",
+                enum1, enum2
+            )));
         }
 
         // Skip unknown 24 bytes
