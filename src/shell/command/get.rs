@@ -54,7 +54,7 @@ pub fn command(state: &mut State, args: Arguments) -> Result<()> {
             Ok(_) => Ok(()),
             Err(e) => {
                 warn!("Error ({}): {}", file_path.display(), e);
-                Err(e)
+                Ok(())
             }
         }
     } else {
