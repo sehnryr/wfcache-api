@@ -76,6 +76,10 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
 
         debug!("Real audio size: {}", header.size as u64);
 
+        if file_data.len() != header.size as usize {
+            return Err(Error::msg("File data size does not match header size"));
+        }
+
         let file_data = file_data[..header.size as usize].to_vec();
 
         // Write the file
@@ -91,24 +95,50 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
         output_path.set_extension("opus");
 
         // Get the file data
-        let mut cache;
-        if header.format_tag == AudioCompressionFormat::Opus0 {
-            cache = state.b_cache.unwrap();
-            if cache.get_file_node(file_node.path()).is_none() {
-                cache = state.f_cache.unwrap();
-            }
-        } else {
-            cache = state.f_cache.unwrap();
-            if cache.get_file_node(file_node.path()).is_none() {
-                cache = state.b_cache.unwrap();
-            }
+        let b_cache = state.b_cache.unwrap();
+        let f_cache = state.f_cache.unwrap();
+
+        let b_file_node = b_cache.get_file_node(file_node.path());
+        let f_file_node = f_cache.get_file_node(file_node.path());
+
+        let mut file_data = Vec::new();
+
+        if f_file_node.is_some() {
+            let f_file_node = f_file_node.clone().unwrap();
+            let _f_file_node = f_file_node.borrow();
+
+            debug!("Part F file node found!");
+
+            debug!("Cache offset: {}", _f_file_node.cache_offset() as u64);
+            debug!("Cache audio size: {}", _f_file_node.comp_len() as u64);
+            debug!("Decompressed audio size: {}", _f_file_node.len() as u64);
+
+            let f_file_data = f_cache.decompress_data(f_file_node.clone())?;
+            file_data.extend_from_slice(&f_file_data);
         }
-        let file_node = cache.get_file_node(file_node.path()).unwrap();
-        let _file_node = file_node.borrow();
 
-        debug!("Cache offset: {}", _file_node.cache_offset() as u64);
+        if (f_file_node.is_none() || file_data.len() != header.size as usize)
+            && b_file_node.is_some()
+        {
+            let b_file_node = b_file_node.unwrap();
+            let _b_file_node = b_file_node.borrow();
 
-        let file_data = cache.decompress_data(file_node.clone())?;
+            debug!("Part B file node found!");
+
+            debug!("Cache offset: {}", _b_file_node.cache_offset() as u64);
+            debug!("Cache audio size: {}", _b_file_node.comp_len() as u64);
+            debug!("Decompressed audio size: {}", _b_file_node.len() as u64);
+
+            let b_file_data = b_cache.decompress_data(b_file_node.clone())?;
+            file_data.extend_from_slice(&b_file_data);
+        }
+
+        debug!("Real audio size: {}", header.size as u64);
+
+        if file_data.len() != header.size as usize {
+            return Err(Error::msg("File data size does not match header size"));
+        }
+
         let file_data = file_data[..header.size as usize].to_vec();
 
         // Write the file
