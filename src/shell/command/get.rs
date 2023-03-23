@@ -69,15 +69,13 @@ fn extract_file(
     let header_file_data = state.h_cache.decompress_data(file_node.clone())?;
     let metadata = Metadata::from(header_file_data.clone());
 
+    if metadata.is_supported() {
+        std::fs::create_dir_all(output_dir.clone()).unwrap();
+    }
+
     match metadata.file_type {
-        FileType::Audio => {
-            std::fs::create_dir_all(output_dir.clone()).unwrap();
-            extract_audio(state, file_node, output_dir)
-        }
-        FileType::Texture => {
-            std::fs::create_dir_all(output_dir.clone()).unwrap();
-            extract_texture(state, file_node, output_dir)
-        }
+        FileType::Audio => extract_audio(state, file_node, output_dir),
+        FileType::Texture => extract_texture(state, file_node, output_dir),
         _ => Err(Error::msg(format!(
             "File is not supported: {}",
             file_node.borrow().name()
