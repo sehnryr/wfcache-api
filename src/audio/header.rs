@@ -1,5 +1,7 @@
 use anyhow::{Error, Result};
 
+use crate::audio::ogg::{get_segment_table, OggPage};
+use crate::audio::opus::{OpusHead, OpusTags};
 use crate::metadata::Metadata;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,9 +21,10 @@ impl From<u32> for AudioCompressionFormat {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct AudioHeader {
     pub format_tag: AudioCompressionFormat,
+    pub stream_serial_number: u32,
     pub samples_per_second: u32,
     pub bits_per_sample: u8,
     pub channels: u8,
@@ -106,6 +109,7 @@ impl AudioHeader {
 
         Ok(Self {
             format_tag,
+            stream_serial_number: rand::random::<u32>(),
             samples_per_second,
             bits_per_sample,
             channels,
@@ -147,6 +151,40 @@ impl AudioHeader {
         }
         data.extend_from_slice(&[0x64, 0x61, 0x74, 0x61]); // "data"
         data.extend_from_slice(&self.size.to_le_bytes()); // Size of the data chunk
+
+        Ok(data)
+    }
+
+    pub fn to_opus(self) -> Result<Vec<u8>> {
+        let mut data = Vec::new();
+
+        // Opus header
+        let opus_head = OpusHead::new(1, self.channels as u8, 312, self.samples_per_second, 0, 0);
+        let segment_table = get_segment_table(&Into::<Vec<u8>>::into(opus_head.clone()), 255);
+        let header_page = OggPage::new(
+            0x02,
+            0,
+            self.stream_serial_number,
+            0,
+            segment_table.len() as u8,
+            segment_table,
+            Into::<Vec<u8>>::into(opus_head),
+        );
+        data.extend_from_slice(&Into::<Vec<u8>>::into(header_page));
+
+        // Opus tags
+        let opus_tags = OpusTags::new("Warframe".to_string(), vec!["ARTIST=Warframe".to_string()]);
+        let segment_table = get_segment_table(&Into::<Vec<u8>>::into(opus_tags.clone()), 255);
+        let tags_page = OggPage::new(
+            0x00,
+            0,
+            self.stream_serial_number,
+            1,
+            segment_table.len() as u8,
+            segment_table,
+            Into::<Vec<u8>>::into(opus_tags),
+        );
+        data.extend_from_slice(&Into::<Vec<u8>>::into(tags_page));
 
         Ok(data)
     }
