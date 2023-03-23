@@ -6,7 +6,8 @@ use crate::metadata::Metadata;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AudioCompressionFormat {
-    PCM,
+    Opus0,
+    Opus1,
     ADPCM,
     Unknown,
 }
@@ -14,7 +15,8 @@ pub enum AudioCompressionFormat {
 impl From<u32> for AudioCompressionFormat {
     fn from(value: u32) -> Self {
         match value {
-            0x01 => AudioCompressionFormat::PCM,
+            0x00 => AudioCompressionFormat::Opus0,
+            0x01 => AudioCompressionFormat::Opus1,
             0x02 => AudioCompressionFormat::ADPCM,
             _ => AudioCompressionFormat::Unknown,
         }
