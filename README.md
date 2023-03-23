@@ -23,5 +23,5 @@ from Warframe's cache files programmatically.
 ## Supported formats
 
 - [x] `*.png` Images (Exported as DDS)
-- [ ] `*.wav` Audio
+- [x] `*.wav` Audio (Exported as either WAV or Opus)
 - [ ] `*.fbx` 3D models
