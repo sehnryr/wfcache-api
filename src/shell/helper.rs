@@ -79,7 +79,8 @@ impl Completer for Helper<'_> {
             if child_directory.borrow().name().starts_with(uncompleted) {
                 candidates.push(format!(
                     "{}/",
-                    child_directory.borrow().path().display().to_string()
+                    &child_directory.borrow().path().display().to_string()
+                        [current_dir.display().to_string().len()..]
                 ));
             }
         }
@@ -87,11 +88,17 @@ impl Completer for Helper<'_> {
         // Get matching files
         for child_file in current_dir_node.borrow().children_files() {
             if child_file.borrow().name().starts_with(uncompleted) {
-                candidates.push(child_file.borrow().path().display().to_string());
+                candidates.push(
+                    child_file.borrow().path().display().to_string()
+                        [current_dir.display().to_string().len()..].to_string(),
+                );
             }
         }
 
-        Ok((last_arg_pos, candidates))
+        // Sort the candidates
+        candidates.sort();
+        
+        Ok((last_arg_pos + arg_path.len(), candidates))
     }
 
     fn update(&self, line: &mut LineBuffer, start: usize, elected: &str) {
