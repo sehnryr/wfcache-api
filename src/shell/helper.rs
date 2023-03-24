@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use log::debug;
+use lotus_lib::toc::node::Node;
 use rustyline::completion::Completer;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
@@ -9,7 +9,6 @@ use rustyline::line_buffer::LineBuffer;
 use rustyline::validate::Validator;
 use rustyline::{Context, Helper as RustylineHelper};
 
-use crate::shell::command::ls::get_children;
 use crate::shell::State;
 
 pub struct Helper<'a> {
@@ -38,7 +37,7 @@ impl Completer for Helper<'_> {
         pos: usize,
         _ctx: &rustyline::Context<'_>,
     ) -> rustyline::Result<(usize, Vec<Self::Candidate>)> {
-        let mut candidates = Vec::new();
+        let mut candidates: Vec<String> = Vec::new();
 
         // Get the command
         let command = line.split_whitespace().next();
@@ -52,20 +51,43 @@ impl Completer for Helper<'_> {
         let last_arg_pos = line.rfind(' ').unwrap_or(pos) + 1;
         let last_arg = &line[last_arg_pos..pos];
 
+        // If the last argument contains a slash, split it and get the last part
+        let uncompleted = last_arg.split('/').last().unwrap_or(last_arg);
+        let arg_path = &last_arg[..last_arg.len() - uncompleted.len()];
+
         // Get the current directory
-        let current_dir = self.state.borrow().current_lotus_dir.clone();
+        let mut current_dir = self.state.borrow().current_lotus_dir.clone();
+        current_dir.push(arg_path);
 
         // Get the current directory node
         let current_dir_node = self
             .state
             .borrow()
             .h_cache
-            .get_directory_node(current_dir.to_str().unwrap())
-            .unwrap();
+            .get_directory_node(current_dir.to_str().unwrap());
 
-        for node in get_children(current_dir_node) {
-            if node.1.starts_with(last_arg) {
-                candidates.push(node.1);
+        // Check if the directory exists
+        if current_dir_node.is_none() {
+            return Ok((0, Vec::with_capacity(0)));
+        }
+
+        // Get the directory node
+        let current_dir_node = current_dir_node.unwrap();
+
+        // Get matching directories
+        for child_directory in current_dir_node.borrow().children_directories() {
+            if child_directory.borrow().name().starts_with(uncompleted) {
+                candidates.push(format!(
+                    "{}/",
+                    child_directory.borrow().path().display().to_string()
+                ));
+            }
+        }
+
+        // Get matching files
+        for child_file in current_dir_node.borrow().children_files() {
+            if child_file.borrow().name().starts_with(uncompleted) {
+                candidates.push(child_file.borrow().path().display().to_string());
             }
         }
 
