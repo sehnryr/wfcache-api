@@ -1,5 +1,6 @@
 use lotus_lib::cache_pair::CachePairReader;
 
+#[derive(Clone)]
 pub struct State<'a> {
     pub directory: std::path::PathBuf,
     pub h_cache: &'a CachePairReader,
