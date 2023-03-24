@@ -1,9 +1,9 @@
-use anyhow::{Error, Result};
+use anyhow::Result;
 use clap::Parser;
 use lotus_lib::toc::node::Node;
 use std::path::PathBuf;
 
-use crate::shell::{error::PathNotFound, State};
+use crate::shell::State;
 use crate::utils::path::normalize_path;
 
 enum NodeKind {
@@ -28,7 +28,8 @@ pub fn command(state: &State, args: Arguments) -> Result<()> {
 
     // Check if the directory exists
     if dir_node.is_none() {
-        return Err(Error::from(PathNotFound));
+        println!("Path not found: {}", directory.to_str().unwrap());
+        return Ok(());
     }
 
     // Get the directory node
