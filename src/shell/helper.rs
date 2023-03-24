@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use log::debug;
 use rustyline::completion::Completer;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
@@ -48,7 +49,7 @@ impl Completer for Helper<'_> {
         }
 
         // Get the last argument of the command
-        let last_arg_pos = line.trim_end().rfind(' ').unwrap_or(pos) + 1;
+        let last_arg_pos = line.rfind(' ').unwrap_or(pos) + 1;
         let last_arg = &line[last_arg_pos..pos];
 
         // Get the current directory
