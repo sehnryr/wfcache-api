@@ -1,6 +1,6 @@
 [package]
 name = "wfcache-api"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 authors = ["Youn Mélois <youn@melois.dev>"]
 repository = "https://github.com/sehnryr/wfcache-api"
