@@ -52,6 +52,9 @@ pub fn command(state: &State, args: Arguments) -> Result<()> {
         nodes.push((NodeKind::File, child_file.borrow().name()));
     }
 
+    // Sort the nodes by name
+    nodes.sort_by(|a, b| a.1.cmp(&b.1));
+
     // Get the terminal size
     let size = terminal_size();
 
