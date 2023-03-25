@@ -2,6 +2,8 @@ use anyhow::Result;
 use clap::Parser;
 use lotus_lib::toc::node::Node;
 use std::path::PathBuf;
+use term_grid::{Cell, Direction, Filling, Grid, GridOptions};
+use terminal_size::{terminal_size, Height, Width};
 
 use crate::shell::State;
 use crate::utils::path::normalize_path;
@@ -50,12 +52,34 @@ pub fn command(state: &State, args: Arguments) -> Result<()> {
         nodes.push((NodeKind::File, child_file.borrow().name()));
     }
 
-    for (node_kind, name) in nodes {
-        match node_kind {
-            NodeKind::File => print!("[f]"),
-            NodeKind::Directory => print!("[d]"),
+    // Get the terminal size
+    let size = terminal_size();
+
+    // Get the width of the terminal (default to 80)
+    let mut width: usize = match size {
+        Some((Width(w), Height(_))) => w.into(),
+        None => 80,
+    };
+
+    // Create the grid
+    let mut grid = Grid::new(GridOptions {
+        filling: Filling::Spaces(1),
+        direction: Direction::TopToBottom,
+    });
+
+    // Add the nodes to the grid
+    for (_, name) in nodes {
+        // Add the cell
+        grid.add(Cell::from(name.clone()));
+
+        // If the name is longer than the current width, update the width
+        if name.len() > width {
+            width = name.len();
         }
-        println!("\t{}", name);
     }
+
+    // Print the grid
+    print!("{}", grid.fit_into_width(width).unwrap());
+
     Ok(())
 }
