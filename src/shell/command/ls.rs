@@ -1,6 +1,8 @@
 use anyhow::Result;
 use clap::Parser;
+use log::debug;
 use lotus_lib::toc::node::Node;
+use lscolors::{Indicator, LsColors, Style};
 use std::path::PathBuf;
 use term_grid::{Cell, Direction, Filling, Grid, GridOptions};
 use terminal_size::{terminal_size, Height, Width};
@@ -70,10 +72,25 @@ pub fn command(state: &State, args: Arguments) -> Result<()> {
         direction: Direction::TopToBottom,
     });
 
+    // Get the lscolors
+    let lscolors = LsColors::from_env().unwrap_or_default();
+
     // Add the nodes to the grid
-    for (_, name) in nodes {
-        // Add the cell
-        grid.add(Cell::from(name.clone()));
+    for (kind, name) in nodes {
+        // Get the style
+        let style = match kind {
+            NodeKind::File => lscolors.style_for_indicator(Indicator::RegularFile),
+            NodeKind::Directory => lscolors.style_for_indicator(Indicator::Directory),
+        };
+
+        // Add the cell with colored name
+        grid.add(Cell::from(
+            style
+                .map(Style::to_ansi_term_style)
+                .unwrap_or_default()
+                .paint(name.clone())
+                .to_string(),
+        ));
 
         // If the name is longer than the current width, update the width
         if name.len() > width {
