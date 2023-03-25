@@ -150,9 +150,6 @@ fn main() -> Result<()> {
 
         // Parse the command
         parse_command(&mut state.borrow_mut(), line)?;
-
-        // Pad the output
-        println!();
     }
 
     Ok(())
@@ -166,18 +163,25 @@ fn parse_command(state: &mut State, line: &str) -> Result<()> {
     command_parts.insert(0, env!("CARGO_PKG_NAME"));
 
     match Cli::try_parse_from(command_parts.into_iter()) {
-        Ok(command) => match command.command {
-            Command::ChangeDirectory(args) => cd::command(state, args),
-            Command::FindFileOrDirectory(args) => find::command(state, args),
-            Command::GetFileContent(args) => get::command(state, args),
-            Command::ListDirectoryContents(args) => ls::command(state, args),
-            Command::PrintFileMetadata(args) => stat::command(state, args),
-            Command::PrintWorkingDirectory(args) => pwd::command(state, args),
-        },
+        Ok(command) => {
+            let res = match command.command {
+                Command::ChangeDirectory(args) => cd::command(state, args),
+                Command::FindFileOrDirectory(args) => find::command(state, args),
+                Command::GetFileContent(args) => get::command(state, args),
+                Command::ListDirectoryContents(args) => ls::command(state, args),
+                Command::PrintFileMetadata(args) => stat::command(state, args),
+                Command::PrintWorkingDirectory(args) => pwd::command(state, args),
+            };
+            
+            // Pad the output
+            println!();
+
+            return res;
+        }
         Err(err) => Ok(match clap::Error::kind(&err) {
             ErrorKind::DisplayHelp => println!("{err}"),
             ErrorKind::DisplayVersion => println!("{err}"),
-            _ => println!("Invalid command (type 'help' for help)"),
+            _ => println!("Invalid command (type 'help' for help)\n"),
         }),
     }
 }
