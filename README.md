@@ -3,6 +3,8 @@
 `wfcache-api` is a Rust application that allows you to read and extract data 
 from Warframe's cache files programmatically.
 
+![Demo](docs/demo.gif)
+
 ## API support
 
 - [x] list files and directories
