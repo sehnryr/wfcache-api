@@ -113,7 +113,7 @@ fn main() -> Result<()> {
     rl.set_helper(Some(Helper {
         state: state.clone(),
     }));
-    let prompt = "wfcache-api$ ";
+    let prompt = "[wfcache-api]# ";
 
     loop {
         let line = rl.readline(&prompt);
