@@ -113,10 +113,19 @@ fn main() -> Result<()> {
     rl.set_helper(Some(Helper {
         state: state.clone(),
     }));
-    let prompt = "[wfcache-api]# ";
 
     loop {
-        let line = rl.readline(&prompt);
+        let line = rl.readline(&format!(
+            "[{} {}]# ",
+            env!("CARGO_PKG_NAME"),
+            state
+                .borrow()
+                .current_lotus_dir
+                .file_name()
+                .unwrap_or("/".as_ref())
+                .to_str()
+                .unwrap()
+        ));
         match line {
             Ok(_) => {}
             Err(ReadlineError::Interrupted) => break, // Ctrl-C
@@ -172,7 +181,7 @@ fn parse_command(state: &mut State, line: &str) -> Result<()> {
                 Command::PrintFileMetadata(args) => stat::command(state, args),
                 Command::PrintWorkingDirectory(args) => pwd::command(state, args),
             };
-            
+
             // Pad the output
             println!();
 
