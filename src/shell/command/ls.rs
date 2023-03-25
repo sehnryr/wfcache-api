@@ -1,6 +1,5 @@
 use anyhow::Result;
 use clap::Parser;
-use log::debug;
 use lotus_lib::toc::node::Node;
 use lscolors::{Indicator, LsColors, Style};
 use std::path::PathBuf;
