@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use crate::shell::State;
 use crate::utils::path::normalize_path;
 
+#[derive(PartialEq, Eq)]
 enum NodeKind {
     File,
     Directory,
@@ -50,14 +51,11 @@ pub fn command(state: &State, args: Arguments) -> Result<()> {
     }
 
     for (node_kind, name) in nodes {
-        println!(
-            "{} \t{}",
-            match node_kind {
-                NodeKind::File => "[f]",
-                NodeKind::Directory => "[d]",
-            },
-            name,
-        );
+        match node_kind {
+            NodeKind::File => print!("[f]"),
+            NodeKind::Directory => print!("[d]"),
+        }
+        println!("\t{}", name);
     }
     Ok(())
 }
