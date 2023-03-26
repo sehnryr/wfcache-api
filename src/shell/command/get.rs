@@ -70,7 +70,6 @@ pub fn command(state: &mut State, args: Arguments) -> Result<()> {
             }
         }
     } else {
-        output_dir.pop();
         extract_dir(state, dir_node.unwrap(), output_dir, args.recursive)
     }
 }
