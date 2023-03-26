@@ -35,7 +35,6 @@ pub struct Arguments {
 pub fn command(state: &mut State, args: Arguments) -> Result<()> {
     let path = normalize_path(&args.path, &state.current_lotus_dir);
     let mut output_dir = path.strip_prefix("/").unwrap().to_path_buf();
-    output_dir = state.output_dir.join(output_dir);
 
     // Get the file node or directory node
     let file_node = state.h_cache.get_file_node(path.to_str().unwrap());
@@ -61,6 +60,7 @@ pub fn command(state: &mut State, args: Arguments) -> Result<()> {
 
     // Extract the file or directory
     if is_file {
+        output_dir = state.output_dir.join(output_dir);
         let file_path = file_node.clone().unwrap().borrow().path();
         match extract_file(state, file_node.unwrap(), output_dir) {
             Ok(_) => Ok(()),
@@ -70,6 +70,8 @@ pub fn command(state: &mut State, args: Arguments) -> Result<()> {
             }
         }
     } else {
+        output_dir.pop();
+        output_dir = state.output_dir.join(output_dir);
         extract_dir(state, dir_node.unwrap(), output_dir, args.recursive)
     }
 }
