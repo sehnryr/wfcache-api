@@ -14,19 +14,18 @@ categories = ["command-line-utilities"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.69"
-clap = { version = "4.1.4", features = ["derive"] }
-crc = "3.0.1"
-ddsfile = "0.5.1"
-derivative = "2.2.0"
-env_logger = "0.10.0"
-log = "0.4.17"
+anyhow = "1.0.*"
+clap = { version = "4.1.*", features = ["derive"] }
+crc = "3.0.*"
+ddsfile = "0.5.*"
+derivative = "2.2.*"
+env_logger = "0.10.*"
+log = "0.4.*"
 lotus-lib = "2.*"
 lscolors = "0.13.*"
-rand = "0.8.5"
-relative-path = "1.7.3"
-rustyline = "10.1.1"
-serde_json = "1.0.93"
+rand = "0.8.*"
+relative-path = "1.7.*"
+rustyline = "10.1.*"
+serde_json = "1.0.*"
 term_grid = "0.1.*"
 terminal_size = "0.2.*"
-yansi = "0.5.1"
