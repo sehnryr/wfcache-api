@@ -20,8 +20,16 @@ pub struct Arguments {
     path: PathBuf,
 
     /// Extract recursively
-    #[arg(short, default_value = "false")]
+    #[arg(short, default_value = "false", conflicts_with = "cache")]
     recursive: bool,
+
+    /// Extract without decompressing the data
+    #[arg(long, default_value = "false", hide = true, requires = "cache")]
+    raw: bool,
+
+    /// Specify a cache to extract from
+    #[arg(short, long, requires = "raw", hide = true, value_parser = ["H", "F", "B"], ignore_case = true)]
+    cache: Option<String>,
 }
 
 pub fn command(state: &mut State, args: Arguments) -> Result<()> {
@@ -44,6 +52,11 @@ pub fn command(state: &mut State, args: Arguments) -> Result<()> {
     }
 
     debug!("Output directory: {:?}", output_dir);
+
+    // Extract the raw file if the raw flag is set
+    if args.raw {
+        return extract_raw_file(state, args, path, output_dir);
+    }
 
     // Extract the file or directory
     if is_file {
@@ -112,6 +125,52 @@ fn extract_dir(
             extract_dir(state, dir_child_node.clone(), output_dir.clone(), recursive)?;
         }
     }
+
+    Ok(())
+}
+
+fn extract_raw_file(
+    state: &State,
+    args: Arguments,
+    file_path: PathBuf,
+    output_dir: PathBuf,
+) -> Result<()> {
+    let cache_name = args.cache.unwrap();
+    let cache = match cache_name.to_uppercase().as_str() {
+        "H" => Some(state.h_cache),
+        "F" => state.f_cache,
+        "B" => state.b_cache,
+        _ => unreachable!(),
+    };
+
+    // Check if the cache exists
+    if cache.is_none() {
+        return Err(Error::msg(format!("Cache '{}' does not exist", cache_name)));
+    }
+
+    let cache = cache.unwrap();
+
+    // Get the file node
+    let file_node = cache.get_file_node(file_path.to_str().unwrap());
+
+    // Check if the file exists in the cache
+    if file_node.is_none() {
+        warn!("File '{}' does not exist in the cache", file_path.display());
+        return Ok(());
+    }
+
+    // Extract the file
+    let file_node = file_node.unwrap();
+    let file_data = cache.get_data(file_node.clone())?;
+
+    // Create the output directory
+    std::fs::create_dir_all(output_dir.clone()).unwrap();
+
+    // Write the file
+    let file_path = output_dir.join(format!("{}.{}.raw", file_node.borrow().name(), cache_name));
+    std::fs::write(file_path.clone(), file_data)?;
+
+    info!("Extracted file to '{}'", file_path.display());
 
     Ok(())
 }
