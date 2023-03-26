@@ -35,6 +35,7 @@ pub struct Arguments {
 pub fn command(state: &mut State, args: Arguments) -> Result<()> {
     let path = normalize_path(&args.path, &state.current_lotus_dir);
     let mut output_dir = path.strip_prefix("/").unwrap().to_path_buf();
+    output_dir = state.output_dir.join(output_dir);
 
     // Get the file node or directory node
     let file_node = state.h_cache.get_file_node(path.to_str().unwrap());

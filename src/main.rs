@@ -99,7 +99,13 @@ fn main() -> Result<()> {
     }
 
     // Initialize the state
-    let state = State::new(args.directory, h_cache.unwrap(), f_cache, b_cache);
+    let state = State::new(
+        args.directory,
+        args.output,
+        h_cache.unwrap(),
+        f_cache,
+        b_cache,
+    );
     let state = Rc::new(RefCell::new(state));
 
     // If the user specified a command, execute it and exit

@@ -3,6 +3,7 @@ use lotus_lib::cache_pair::CachePairReader;
 #[derive(Clone)]
 pub struct State<'a> {
     pub directory: std::path::PathBuf,
+    pub output_dir: std::path::PathBuf,
     pub h_cache: &'a CachePairReader,
     pub f_cache: Option<&'a CachePairReader>,
     pub b_cache: Option<&'a CachePairReader>,
@@ -12,12 +13,14 @@ pub struct State<'a> {
 impl State<'_> {
     pub fn new<'a>(
         directory: std::path::PathBuf,
+        output_dir: std::path::PathBuf,
         h_cache: &'a CachePairReader,
         f_cache: Option<&'a CachePairReader>,
         b_cache: Option<&'a CachePairReader>,
     ) -> State<'a> {
         State {
             directory,
+            output_dir,
             h_cache,
             f_cache,
             b_cache,
