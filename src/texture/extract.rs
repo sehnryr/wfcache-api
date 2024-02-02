@@ -1,23 +1,19 @@
 use anyhow::Result;
 use log::debug;
 use lotus_lib::cache_pair::CachePair;
-use lotus_lib::toc::node::Node;
-use lotus_lib::toc::FileNode;
-use lotus_lib::utils::{get_block_lengths, internal_decompress_post_ensmallening};
-use std::cell::RefCell;
+use lotus_lib::compression::{decompress_post_ensmallening, get_block_lengths};
+use lotus_lib::toc::{FileNode, Node};
 use std::fs::File;
 use std::io::{Seek, SeekFrom, Write};
 use std::path::PathBuf;
-use std::rc::Rc;
 
 use crate::metadata::Metadata;
 use crate::shell::State;
 use crate::texture::header::TextureHeader;
 
-pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: PathBuf) -> Result<()> {
+pub fn extract(state: &State, file_node: Node, output_dir: PathBuf) -> Result<()> {
     // Get the decompressed header file data
     let header_file_data = state.h_cache.decompress_data(file_node.clone())?;
-    let file_node = file_node.borrow();
 
     // Create the metadata
     let metadata = Metadata::from(header_file_data.clone());
@@ -43,12 +39,11 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
     if header.f_cache_image_count > 0 {
         let f_cache = state.f_cache.unwrap();
         let file_node = f_cache.get_file_node(file_node.path()).unwrap();
-        let _file_node = file_node.borrow();
 
-        debug!("Cache offset: {}", _file_node.cache_offset() as u64);
-        debug!("Cache image size: {}", _file_node.comp_len() as u64);
+        debug!("Cache offset: {}", file_node.cache_offset() as u64);
+        debug!("Cache image size: {}", file_node.comp_len() as u64);
         debug!("Real image size: {}", header.size() as u64);
-        debug!("Decompressed image size: {}", _file_node.len() as u64);
+        debug!("Decompressed image size: {}", file_node.len() as u64);
 
         let f_cache_offsets = header.f_cache_image_offsets.clone();
 
@@ -58,7 +53,7 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
             let mut f_cache_reader = File::open(f_cache.cache_path()).unwrap();
             let real_cache_image_sub_offset = get_real_cache_image_offset(
                 &mut f_cache_reader,
-                _file_node.cache_offset() as usize,
+                file_node.cache_offset() as usize,
                 cache_image_sub_offset as usize,
             )?;
 
@@ -67,8 +62,8 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
 
             f_cache_reader.seek(SeekFrom::Current(real_cache_image_sub_offset as i64))?;
 
-            file_data = internal_decompress_post_ensmallening(
-                _file_node.comp_len() as usize,
+            file_data = decompress_post_ensmallening(
+                file_node.comp_len() as usize,
                 header.size() as usize,
                 &mut f_cache_reader,
             )?;
@@ -80,12 +75,11 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
     } else {
         let b_cache = state.b_cache.unwrap();
         let file_node = b_cache.get_file_node(file_node.path()).unwrap();
-        let _file_node = file_node.borrow();
 
-        debug!("Cache offset: {}", _file_node.cache_offset() as u64);
-        debug!("Cache image size: {}", _file_node.comp_len() as u64);
+        debug!("Cache offset: {}", file_node.cache_offset() as u64);
+        debug!("Cache image size: {}", file_node.comp_len() as u64);
         debug!("Real image size: {}", header.size() as u64);
-        debug!("Decompressed image size: {}", _file_node.len() as u64);
+        debug!("Decompressed image size: {}", file_node.len() as u64);
 
         let _file_data = b_cache.decompress_data(file_node.clone())?;
         file_data = _file_data[_file_data.len() - header.size().._file_data.len()].to_vec();
@@ -116,7 +110,7 @@ fn get_real_cache_image_offset(
     let mut cache_offset_bottom: usize = 0;
 
     loop {
-        let (block_compressed_len, _) = get_block_lengths(cache_reader);
+        let (block_compressed_len, _) = get_block_lengths(cache_reader)?.unwrap_or((0, 0));
         cache_offset_top += block_compressed_len as usize + BLOCK_HEADER_LEN;
 
         if cache_offset_top >= cache_image_sub_offset {

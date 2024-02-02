@@ -1,10 +1,7 @@
 use anyhow::{Error, Result};
 use clap::Parser;
-use lotus_lib::toc::node::Node;
-use lotus_lib::toc::DirectoryNode;
-use std::cell::RefCell;
+use lotus_lib::toc::{DirectoryNode, Node, NodeKind as LotusNodeKind};
 use std::path::PathBuf;
-use std::rc::Rc;
 
 use crate::shell::{error::PathNotFound, State};
 use crate::utils::path::normalize_path;
@@ -68,64 +65,41 @@ pub fn command(state: &State, args: Arguments) -> Result<()> {
     Ok(())
 }
 
-fn internal_find(state: &State, dir_node: Rc<RefCell<DirectoryNode>>, args: &Arguments) {
-    // Get the directory node
-    let dir_node = dir_node.borrow();
+fn internal_find(state: &State, dir_node: Node, args: &Arguments) {
+    // Split name by '*'
+    let name_parts: Vec<&str> = args.name.split('*').collect();
 
     // List of nodes
     let mut nodes: Vec<(NodeKind, PathBuf)> = Vec::new();
 
-    // Add directories
-    for child_directory in dir_node.children_directories() {
-        // Split name by '*'
-        let name_parts: Vec<&str> = args.name.split('*').collect();
-
+    // Add directories and files
+    for child in dir_node.children() {
         // Check if the name matches
         let mut name_matches = true;
         for (i, name_part) in name_parts.iter().enumerate() {
-            if i == 0 && !child_directory.borrow().name().starts_with(name_part) {
+            if i == 0 && !child.name().starts_with(name_part) {
                 name_matches = false;
                 break;
-            } else if i == name_parts.len() - 1
-                && !child_directory.borrow().name().ends_with(name_part)
-            {
+            } else if i == name_parts.len() - 1 && !child.name().ends_with(name_part) {
                 name_matches = false;
                 break;
-            } else if !child_directory.borrow().name().contains(name_part) {
+            } else if !child.name().contains(name_part) {
                 name_matches = false;
                 break;
             }
         }
 
-        if name_matches {
-            nodes.push((NodeKind::Directory, child_directory.borrow().path()));
-        }
-        internal_find(state, child_directory, args);
-    }
-
-    // Add files
-    for child_file in dir_node.children_files() {
-        // Split name by '*'
-        let name_parts: Vec<&str> = args.name.split('*').collect();
-
-        // Check if the name matches
-        let mut name_matches = true;
-        for (i, name_part) in name_parts.iter().enumerate() {
-            if i == 0 && !child_file.borrow().name().starts_with(name_part) {
-                name_matches = false;
-                break;
-            } else if i == name_parts.len() - 1 && !child_file.borrow().name().ends_with(name_part)
-            {
-                name_matches = false;
-                break;
-            } else if !child_file.borrow().name().contains(name_part) {
-                name_matches = false;
-                break;
-            }
-        }
+        let child_kind = match child.kind() {
+            LotusNodeKind::Directory => NodeKind::Directory,
+            LotusNodeKind::File => NodeKind::File,
+        };
 
         if name_matches {
-            nodes.push((NodeKind::File, child_file.borrow().path()));
+            nodes.push((child_kind, child.path()));
+        }
+
+        if child_kind == NodeKind::Directory && args.recursive {
+            internal_find(state, child, args);
         }
     }
 

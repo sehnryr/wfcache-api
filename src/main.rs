@@ -71,7 +71,11 @@ fn main() -> Result<()> {
     info!(
         "Loaded {} packages: {:?}",
         collection.packages().len(),
-        collection.packages().keys().collect::<Vec<_>>()
+        collection
+            .packages()
+            .iter()
+            .map(|p| p.name())
+            .collect::<Vec<&String>>()
     );
 
     // Get the package

@@ -1,11 +1,8 @@
 use anyhow::{Error, Result};
 use clap::Parser;
 use log::{debug, info, warn};
-use lotus_lib::toc::node::Node;
-use lotus_lib::toc::{DirectoryNode, FileNode};
-use std::cell::RefCell;
+use lotus_lib::toc::{DirectoryNode, Node, NodeKind};
 use std::path::PathBuf;
-use std::rc::Rc;
 
 use crate::audio::extract as extract_audio;
 use crate::metadata::{FileType, Metadata};
@@ -61,7 +58,7 @@ pub fn command(state: &mut State, args: Arguments) -> Result<()> {
     // Extract the file or directory
     if is_file {
         output_dir = state.output_dir.join(output_dir);
-        let file_path = file_node.clone().unwrap().borrow().path();
+        let file_path = file_node.clone().unwrap().path();
         match extract_file(state, file_node.unwrap(), output_dir) {
             Ok(_) => Ok(()),
             Err(e) => {
@@ -76,11 +73,7 @@ pub fn command(state: &mut State, args: Arguments) -> Result<()> {
     }
 }
 
-fn extract_file(
-    state: &State,
-    file_node: Rc<RefCell<FileNode>>,
-    output_dir: PathBuf,
-) -> Result<()> {
+fn extract_file(state: &State, file_node: Node, output_dir: PathBuf) -> Result<()> {
     let header_file_data = state.h_cache.decompress_data(file_node.clone())?;
     let metadata = Metadata::from(header_file_data.clone());
 
@@ -93,28 +86,25 @@ fn extract_file(
         FileType::Texture => extract_texture(state, file_node, output_dir),
         _ => Err(Error::msg(format!(
             "File is not supported: {}",
-            file_node.borrow().name()
+            file_node.name()
         ))),
     }
 }
 
-fn extract_dir(
-    state: &State,
-    dir_node: Rc<RefCell<DirectoryNode>>,
-    output_dir: PathBuf,
-    recursive: bool,
-) -> Result<()> {
-    let dir_node = dir_node.borrow();
-
+fn extract_dir(state: &State, dir_node: Node, output_dir: PathBuf, recursive: bool) -> Result<()> {
     // Create the output directory
     let mut output_dir = output_dir.clone();
     output_dir.push(dir_node.name());
 
     // Extract the files
-    for file_child_node in dir_node.children_files() {
-        let file_path = file_child_node.borrow().path();
+    for child_node in dir_node.children() {
+        if child_node.kind() != NodeKind::File {
+            continue;
+        }
+
+        let file_path = child_node.path();
         info!("Extracting file: {}", file_path.display());
-        match extract_file(state, file_child_node.clone(), output_dir.clone()) {
+        match extract_file(state, child_node.clone(), output_dir.clone()) {
             Ok(_) => {}
             Err(e) => warn!("Error ({}): {}", file_path.display(), e),
         }
@@ -122,9 +112,13 @@ fn extract_dir(
 
     // Extract the directories
     if recursive {
-        for dir_child_node in dir_node.children_directories() {
-            debug!("Extracting directory: {}", dir_child_node.borrow().name());
-            extract_dir(state, dir_child_node.clone(), output_dir.clone(), recursive)?;
+        for child_node in dir_node.children() {
+            if child_node.kind() != NodeKind::Directory {
+                continue;
+            }
+
+            debug!("Extracting directory: {}", child_node.name());
+            extract_dir(state, child_node.clone(), output_dir.clone(), recursive)?;
         }
     }
 
@@ -169,7 +163,7 @@ fn extract_raw_file(
     std::fs::create_dir_all(output_dir.clone()).unwrap();
 
     // Write the file
-    let file_path = output_dir.join(format!("{}.{}.raw", file_node.borrow().name(), cache_name));
+    let file_path = output_dir.join(format!("{}.{}.raw", file_node.name(), cache_name));
     std::fs::write(file_path.clone(), file_data)?;
 
     info!("Extracted file to '{}'", file_path.display());

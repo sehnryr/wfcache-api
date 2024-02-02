@@ -1,21 +1,17 @@
 use anyhow::{Error, Ok, Result};
 use log::debug;
-use lotus_lib::toc::node::Node;
-use lotus_lib::toc::FileNode;
-use std::cell::RefCell;
+use lotus_lib::toc::{FileNode, Node};
 use std::io::Write;
 use std::path::PathBuf;
-use std::rc::Rc;
 
 use crate::audio::header::{AudioCompressionFormat, AudioHeader};
 use crate::audio::ogg::{get_segment_table, OggPage};
 use crate::metadata::Metadata;
 use crate::shell::State;
 
-pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: PathBuf) -> Result<()> {
+pub fn extract(state: &State, file_node: Node, output_dir: PathBuf) -> Result<()> {
     // Get the decompressed header file data
     let header_file_data = state.h_cache.decompress_data(file_node.clone())?;
-    let file_node = file_node.borrow();
 
     // Create the metadata
     let metadata = Metadata::from(header_file_data.clone());
@@ -46,13 +42,12 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
 
         if b_file_node.is_some() {
             let b_file_node = b_file_node.unwrap();
-            let _b_file_node = b_file_node.borrow();
 
             debug!("Part B file node found!");
 
-            debug!("Cache offset: {}", _b_file_node.cache_offset() as u64);
-            debug!("Cache audio size: {}", _b_file_node.comp_len() as u64);
-            debug!("Decompressed audio size: {}", _b_file_node.len() as u64);
+            debug!("Cache offset: {}", b_file_node.cache_offset() as u64);
+            debug!("Cache audio size: {}", b_file_node.comp_len() as u64);
+            debug!("Decompressed audio size: {}", b_file_node.len() as u64);
 
             let b_file_data = b_cache.decompress_data(b_file_node.clone())?;
             file_data.extend_from_slice(&b_file_data);
@@ -60,13 +55,12 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
 
         if f_file_node.is_some() {
             let f_file_node = f_file_node.unwrap();
-            let _f_file_node = f_file_node.borrow();
 
             debug!("Part F file node found!");
 
-            debug!("Cache offset: {}", _f_file_node.cache_offset() as u64);
-            debug!("Cache audio size: {}", _f_file_node.comp_len() as u64);
-            debug!("Decompressed audio size: {}", _f_file_node.len() as u64);
+            debug!("Cache offset: {}", f_file_node.cache_offset() as u64);
+            debug!("Cache audio size: {}", f_file_node.comp_len() as u64);
+            debug!("Decompressed audio size: {}", f_file_node.len() as u64);
 
             let f_file_data = f_cache.decompress_data(f_file_node.clone())?;
             file_data.extend_from_slice(&f_file_data);
@@ -102,13 +96,12 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
 
         if f_file_node.is_some() {
             let f_file_node = f_file_node.clone().unwrap();
-            let _f_file_node = f_file_node.borrow();
 
             debug!("Part F file node found!");
 
-            debug!("Cache offset: {}", _f_file_node.cache_offset() as u64);
-            debug!("Cache audio size: {}", _f_file_node.comp_len() as u64);
-            debug!("Decompressed audio size: {}", _f_file_node.len() as u64);
+            debug!("Cache offset: {}", f_file_node.cache_offset() as u64);
+            debug!("Cache audio size: {}", f_file_node.comp_len() as u64);
+            debug!("Decompressed audio size: {}", f_file_node.len() as u64);
 
             let f_file_data = f_cache.decompress_data(f_file_node.clone())?;
             file_data.extend_from_slice(&f_file_data);
@@ -118,13 +111,12 @@ pub fn extract(state: &State, file_node: Rc<RefCell<FileNode>>, output_dir: Path
             && b_file_node.is_some()
         {
             let b_file_node = b_file_node.unwrap();
-            let _b_file_node = b_file_node.borrow();
 
             debug!("Part B file node found!");
 
-            debug!("Cache offset: {}", _b_file_node.cache_offset() as u64);
-            debug!("Cache audio size: {}", _b_file_node.comp_len() as u64);
-            debug!("Decompressed audio size: {}", _b_file_node.len() as u64);
+            debug!("Cache offset: {}", b_file_node.cache_offset() as u64);
+            debug!("Cache audio size: {}", b_file_node.comp_len() as u64);
+            debug!("Decompressed audio size: {}", b_file_node.len() as u64);
 
             let b_file_data = b_cache.decompress_data(b_file_node.clone())?;
             file_data.extend_from_slice(&b_file_data);

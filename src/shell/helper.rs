@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use lotus_lib::toc::node::Node;
+use lotus_lib::toc::{DirectoryNode, NodeKind};
 use rustyline::completion::Completer;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
@@ -74,30 +74,27 @@ impl Completer for Helper<'_> {
         // Get the directory node
         let current_dir_node = current_dir_node.unwrap();
 
-        // Get matching directories
-        for child_directory in current_dir_node.borrow().children_directories() {
-            if child_directory.borrow().name().starts_with(uncompleted) {
-                candidates.push(format!(
-                    "{}/",
-                    &child_directory.borrow().path().display().to_string()
+        // Get matching directories and files
+        for child in current_dir_node.children() {
+            if child.name().starts_with(uncompleted) {
+                candidates.push(match child.kind() {
+                    NodeKind::File => child.path().display().to_string()
                         [current_dir.display().to_string().len()..]
-                ));
-            }
-        }
-
-        // Get matching files
-        for child_file in current_dir_node.borrow().children_files() {
-            if child_file.borrow().name().starts_with(uncompleted) {
-                candidates.push(
-                    child_file.borrow().path().display().to_string()
-                        [current_dir.display().to_string().len()..].to_string(),
-                );
+                        .to_string(),
+                    NodeKind::Directory => {
+                        format!(
+                            "{}/",
+                            &child.path().display().to_string()
+                                [current_dir.display().to_string().len()..]
+                        )
+                    }
+                });
             }
         }
 
         // Sort the candidates
         candidates.sort();
-        
+
         Ok((last_arg_pos + arg_path.len(), candidates))
     }
 

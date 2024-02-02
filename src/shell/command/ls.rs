@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use lotus_lib::toc::node::Node;
+use lotus_lib::toc::{DirectoryNode, NodeKind};
 use lscolors::{Indicator, LsColors, Style};
 use std::path::PathBuf;
 use term_grid::{Cell, Direction, Filling, Grid, GridOptions};
@@ -8,12 +8,6 @@ use terminal_size::{terminal_size, Height, Width};
 
 use crate::shell::State;
 use crate::utils::path::normalize_path;
-
-#[derive(PartialEq, Eq)]
-enum NodeKind {
-    File,
-    Directory,
-}
 
 /// List the content of a directory
 #[derive(Parser, Debug, Clone)]
@@ -38,23 +32,10 @@ pub fn command(state: &State, args: Arguments) -> Result<()> {
 
     // Get the directory node
     let dir_node = dir_node.unwrap();
-    let dir_node = dir_node.borrow();
 
-    // List of nodes
-    let mut nodes: Vec<(NodeKind, String)> = Vec::new();
-
-    // Add directories
-    for child_directory in dir_node.children_directories() {
-        nodes.push((NodeKind::Directory, child_directory.borrow().name()));
-    }
-
-    // Add files
-    for child_file in dir_node.children_files() {
-        nodes.push((NodeKind::File, child_file.borrow().name()));
-    }
-
-    // Sort the nodes by name
-    nodes.sort_by(|a, b| a.1.cmp(&b.1));
+    // Get the children of the directory and sort them by name
+    let mut nodes = dir_node.children();
+    nodes.sort_by(|a, b| a.name().cmp(&b.name()));
 
     // Get the terminal size
     let size = terminal_size();
@@ -75,9 +56,12 @@ pub fn command(state: &State, args: Arguments) -> Result<()> {
     let lscolors = LsColors::from_env().unwrap_or_default();
 
     // Add the nodes to the grid
-    for (kind, name) in nodes {
+    for node in nodes {
+        let node_kind = node.kind();
+        let node_name = node.name();
+
         // Get the style
-        let style = match kind {
+        let style = match node_kind {
             NodeKind::File => lscolors.style_for_indicator(Indicator::RegularFile),
             NodeKind::Directory => lscolors.style_for_indicator(Indicator::Directory),
         };
@@ -87,13 +71,13 @@ pub fn command(state: &State, args: Arguments) -> Result<()> {
             style
                 .map(Style::to_ansi_term_style)
                 .unwrap_or_default()
-                .paint(name.clone())
+                .paint(node_name.clone())
                 .to_string(),
         ));
 
         // If the name is longer than the current width, update the width
-        if name.len() > width {
-            width = name.len();
+        if node_name.len() > width {
+            width = node_name.len();
         }
     }
 
