@@ -1,9 +1,10 @@
+use std::cmp::max;
+
 use anyhow::{Error, Result};
 use ddsfile::{
     AlphaMode, D3D10ResourceDimension, DxgiFormat, FourCC, Header, Header10, PixelFormatFlags,
 };
 use derivative::Derivative;
-use std::cmp::max;
 
 use crate::metadata::Metadata;
 

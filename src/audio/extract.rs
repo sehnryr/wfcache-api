@@ -1,8 +1,9 @@
+use std::io::Write;
+use std::path::PathBuf;
+
 use anyhow::{Error, Ok, Result};
 use log::debug;
 use lotus_lib::toc::{FileNode, Node};
-use std::io::Write;
-use std::path::PathBuf;
 
 use crate::audio::header::{AudioCompressionFormat, AudioHeader};
 use crate::audio::ogg::{get_segment_table, OggPage};

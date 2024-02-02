@@ -1,7 +1,8 @@
+use std::path::PathBuf;
+
 use anyhow::{Error, Result};
 use clap::Parser;
 use lotus_lib::toc::{DirectoryNode, Node, NodeKind as LotusNodeKind};
-use std::path::PathBuf;
 
 use crate::shell::{error::PathNotFound, State};
 use crate::utils::path::normalize_path;

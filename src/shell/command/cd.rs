@@ -1,6 +1,7 @@
+use std::path::PathBuf;
+
 use anyhow::{Error, Result};
 use clap::Parser;
-use std::path::PathBuf;
 
 use crate::shell::{error::PathNotFound, State};
 use crate::utils::path::normalize_path;

@@ -1,8 +1,9 @@
+use std::path::PathBuf;
+
 use anyhow::{Error, Result};
 use clap::Parser;
 use log::{debug, info, warn};
 use lotus_lib::toc::{DirectoryNode, Node, NodeKind};
-use std::path::PathBuf;
 
 use crate::audio::extract as extract_audio;
 use crate::metadata::{FileType, Metadata};
