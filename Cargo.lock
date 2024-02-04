@@ -318,15 +318,15 @@ dependencies = [
 
 [[package]]
 name = "lotus-lib"
-version = "3.0.0"
+version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c3a8219bd397f5abf9c53bd71435a8317adce17781d405f7d38ae06676f39ee"
+checksum = "f7cf868c808f052d55ea5bfa7a5506517e91108de317683a0239bec18d6966a2"
 dependencies = [
  "anyhow",
  "derivative",
  "log",
  "lz4_flex",
- "oodle-sys",
+ "oodle-safe",
  "rctree",
  "zerocopy",
 ]
@@ -410,6 +410,15 @@ name = "once_cell"
 version = "1.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
+
+[[package]]
+name = "oodle-safe"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2dccbc93c025bd77d57cfbd547ee6dd5cd6c184044bc6cea606d9713ae61015f"
+dependencies = [
+ "oodle-sys",
+]
 
 [[package]]
 name = "oodle-sys"
