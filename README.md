@@ -5,6 +5,12 @@ from Warframe's cache files programmatically.
 
 ![Demo](docs/demo.gif)
 
+## Dependencies
+
+This binary depends on [Oodle](http://www.radgametools.com/oodle.htm) for
+decompression. You will need to install the shared library, to do so follow the
+instructions here: https://github.com/sehnryr/get-oodle-lib
+
 ## API support
 
 - [x] list files and directories
