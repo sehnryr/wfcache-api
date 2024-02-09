@@ -1,8 +1,6 @@
 mod args;
-mod audio;
 mod metadata;
 mod shell;
-mod texture;
 mod utils;
 
 use std::cell::RefCell;
@@ -106,6 +104,7 @@ fn main() -> Result<()> {
     let state = State::new(
         args.directory,
         args.output,
+        package,
         h_cache.unwrap(),
         f_cache,
         b_cache,

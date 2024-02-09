@@ -1,9 +1,9 @@
 use derivative::Derivative;
+use lotus_audio_utils::AudioKind;
+use lotus_texture_utils::TextureKind;
 use serde_json::Value;
 
-use crate::audio::AudioType;
 use crate::metadata::arguments::parse_arguments;
-use crate::texture::TextureType;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum FileType {
@@ -14,22 +14,15 @@ pub enum FileType {
 
 impl From<u32> for FileType {
     fn from(file_type: u32) -> Self {
-        match file_type {
-            AudioType::AUDIO_139 => FileType::Audio,
-            TextureType::DIFFUSE_EMISSION_TINT => FileType::Texture,
-            TextureType::BILLBOARD_SPRITEMAP_DIFFUSE => FileType::Texture,
-            TextureType::BILLBOARD_SPRITEMAP_NORMAL => FileType::Texture,
-            TextureType::ROUGHNESS => FileType::Texture,
-            TextureType::SKYBOX => FileType::Texture,
-            TextureType::TEXTURE_174 => FileType::Texture,
-            TextureType::TEXTURE_176 => FileType::Texture,
-            TextureType::CUBEMAP => FileType::Texture,
-            TextureType::NORMAL_MAP => FileType::Texture,
-            TextureType::PACKMAP => FileType::Texture,
-            TextureType::TEXTURE_194 => FileType::Texture,
-            TextureType::DETAILSPACK => FileType::Texture,
-            _ => FileType::Unknown,
+        if AudioKind::try_from(file_type).is_ok() {
+            return FileType::Audio;
         }
+
+        if TextureKind::try_from(file_type).is_ok() {
+            return FileType::Texture;
+        }
+
+        FileType::Unknown
     }
 }
 

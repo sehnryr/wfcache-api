@@ -5,10 +5,9 @@ use clap::Parser;
 use log::{debug, info, warn};
 use lotus_lib::toc::{DirectoryNode, Node, NodeKind};
 
-use crate::audio::extract as extract_audio;
 use crate::metadata::{FileType, Metadata};
 use crate::shell::{error::PathNotFound, State};
-use crate::texture::extract as extract_texture;
+use crate::utils::extract::{extract_audio, extract_texture};
 use crate::utils::path::normalize_path;
 
 /// Extract a file from the cache or a directory recursively
