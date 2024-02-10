@@ -61,14 +61,23 @@ pub fn command(state: &State, args: Arguments) -> Result<()> {
     // Get the directory node
     let dir_node = dir_node.unwrap();
 
-    internal_find(state, dir_node, &args);
+    // Trim the name of any quotes
+    let name = args.name.trim_matches('\'').trim_matches('"');
+
+    internal_find(state, dir_node, name, args.recursive, args.type_);
 
     Ok(())
 }
 
-fn internal_find(state: &State, dir_node: Node, args: &Arguments) {
+fn internal_find(
+    state: &State,
+    dir_node: Node,
+    name: &str,
+    recursive: bool,
+    kind: Option<NodeKind>,
+) {
     // Split name by '*'
-    let name_parts: Vec<&str> = args.name.split('*').collect();
+    let name_parts: Vec<&str> = name.split('*').collect();
 
     // List of nodes
     let mut nodes: Vec<(NodeKind, PathBuf)> = Vec::new();
@@ -99,13 +108,13 @@ fn internal_find(state: &State, dir_node: Node, args: &Arguments) {
             nodes.push((child_kind, child.path()));
         }
 
-        if child_kind == NodeKind::Directory && args.recursive {
-            internal_find(state, child, args);
+        if child_kind == NodeKind::Directory && recursive {
+            internal_find(state, child, name, recursive, kind);
         }
     }
 
     for (node_kind, path) in nodes {
-        if args.type_.is_some() && args.type_.unwrap() != node_kind {
+        if kind.is_some() && kind.unwrap() != node_kind {
             continue;
         }
 
