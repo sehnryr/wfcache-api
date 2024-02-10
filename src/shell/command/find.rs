@@ -79,9 +79,6 @@ fn internal_find(
     // Split name by '*'
     let name_parts: Vec<&str> = name.split('*').collect();
 
-    // List of nodes
-    let mut nodes: Vec<(NodeKind, PathBuf)> = Vec::new();
-
     // Add directories and files
     for child in dir_node.children() {
         // Check if the name matches
@@ -105,19 +102,13 @@ fn internal_find(
         };
 
         if name_matches {
-            nodes.push((child_kind, child.path()));
+            if kind.is_none() || (kind.is_some() && kind.unwrap() == child_kind) {
+                println!("{}", child.path().display());
+            }
         }
 
         if child_kind == NodeKind::Directory && recursive {
             internal_find(state, child, name, recursive, kind);
         }
-    }
-
-    for (node_kind, path) in nodes {
-        if kind.is_some() && kind.unwrap() != node_kind {
-            continue;
-        }
-
-        println!("{}", path.display());
     }
 }
