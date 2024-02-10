@@ -2,12 +2,10 @@ use std::path::PathBuf;
 
 use anyhow::{Error, Result};
 use clap::Parser;
-use log::{debug, info, warn};
-use lotus_lib::toc::{DirectoryNode, Node, NodeKind};
+use log::{debug, warn};
 
-use crate::metadata::{FileType, Metadata};
 use crate::shell::{error::PathNotFound, State};
-use crate::utils::extract::{extract_audio, extract_texture};
+use crate::utils::extract::{extract_dir, extract_file, extract_raw_file};
 use crate::utils::path::normalize_path;
 
 /// Extract a file from the cache or a directory recursively
@@ -52,7 +50,8 @@ pub fn command(state: &mut State, args: Arguments) -> Result<()> {
 
     // Extract the raw file if the raw flag is set
     if args.raw {
-        return extract_raw_file(state, args, path, output_dir);
+        let cache_name = args.cache.unwrap_or_else(|| unreachable!());
+        return extract_raw_file(state, path, output_dir, cache_name);
     }
 
     // Extract the file or directory
@@ -71,102 +70,4 @@ pub fn command(state: &mut State, args: Arguments) -> Result<()> {
         output_dir = state.output_dir.join(output_dir);
         extract_dir(state, dir_node.unwrap(), output_dir, args.recursive)
     }
-}
-
-fn extract_file(state: &State, file_node: Node, output_dir: PathBuf) -> Result<()> {
-    let header_file_data = state.h_cache.decompress_data(file_node.clone())?;
-    let metadata = Metadata::from(header_file_data.clone());
-
-    if metadata.is_supported() {
-        std::fs::create_dir_all(output_dir.clone()).unwrap();
-    }
-
-    match metadata.file_type {
-        FileType::Audio => extract_audio(state, file_node, output_dir),
-        FileType::Texture => extract_texture(state, file_node, output_dir),
-        _ => Err(Error::msg(format!(
-            "File is not supported: {}",
-            file_node.name()
-        ))),
-    }
-}
-
-fn extract_dir(state: &State, dir_node: Node, output_dir: PathBuf, recursive: bool) -> Result<()> {
-    // Create the output directory
-    let mut output_dir = output_dir.clone();
-    output_dir.push(dir_node.name());
-
-    // Extract the files
-    for child_node in dir_node.children() {
-        if child_node.kind() != NodeKind::File {
-            continue;
-        }
-
-        let file_path = child_node.path();
-        info!("Extracting file: {}", file_path.display());
-        match extract_file(state, child_node.clone(), output_dir.clone()) {
-            Ok(_) => {}
-            Err(e) => warn!("Error ({}): {}", file_path.display(), e),
-        }
-    }
-
-    // Extract the directories
-    if recursive {
-        for child_node in dir_node.children() {
-            if child_node.kind() != NodeKind::Directory {
-                continue;
-            }
-
-            debug!("Extracting directory: {}", child_node.name());
-            extract_dir(state, child_node.clone(), output_dir.clone(), recursive)?;
-        }
-    }
-
-    Ok(())
-}
-
-fn extract_raw_file(
-    state: &State,
-    args: Arguments,
-    file_path: PathBuf,
-    output_dir: PathBuf,
-) -> Result<()> {
-    let cache_name = args.cache.unwrap();
-    let cache = match cache_name.to_uppercase().as_str() {
-        "H" => Some(state.h_cache),
-        "F" => state.f_cache,
-        "B" => state.b_cache,
-        _ => unreachable!(),
-    };
-
-    // Check if the cache exists
-    if cache.is_none() {
-        return Err(Error::msg(format!("Cache '{}' does not exist", cache_name)));
-    }
-
-    let cache = cache.unwrap();
-
-    // Get the file node
-    let file_node = cache.get_file_node(file_path.to_str().unwrap());
-
-    // Check if the file exists in the cache
-    if file_node.is_none() {
-        warn!("File '{}' does not exist in the cache", file_path.display());
-        return Ok(());
-    }
-
-    // Extract the file
-    let file_node = file_node.unwrap();
-    let file_data = cache.get_data(file_node.clone())?;
-
-    // Create the output directory
-    std::fs::create_dir_all(output_dir.clone()).unwrap();
-
-    // Write the file
-    let file_path = output_dir.join(format!("{}.{}.raw", file_node.name(), cache_name));
-    std::fs::write(file_path.clone(), file_data)?;
-
-    info!("Extracted file to '{}'", file_path.display());
-
-    Ok(())
 }
