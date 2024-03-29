@@ -3,9 +3,9 @@ use std::path::PathBuf;
 
 use anyhow::{Error, Result};
 use log::{debug, info, warn};
-use lotus_audio_utils::Audio;
 use lotus_lib::toc::{DirectoryNode, Node, NodeKind};
-use lotus_texture_utils::Texture;
+use lotus_utils_audio::Audio;
+use lotus_utils_texture::Texture;
 
 use crate::metadata::{FileType, Metadata};
 use crate::shell::State;

@@ -359,21 +359,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 
 [[package]]
-name = "lotus-audio-utils"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "837b40e2f4e968f914b17750482e64e7770d60128804a3339ad549e38a1b87ea"
-dependencies = [
- "anyhow",
- "bytebuffer",
- "crc",
- "log",
- "lotus-lib",
- "rand",
- "zerocopy",
-]
-
-[[package]]
 name = "lotus-lib"
 version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -389,10 +374,25 @@ dependencies = [
 ]
 
 [[package]]
-name = "lotus-texture-utils"
+name = "lotus-utils-audio"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54e7368d936fbb4cb8c6de4ec7800051dd4b3ced5224c1f5d9c9187f8a780430"
+checksum = "8e64366fa9120c9204fb091d879b1632708576cadb9ed9f46dbd6812c03f572b"
+dependencies = [
+ "anyhow",
+ "bytebuffer",
+ "crc",
+ "log",
+ "lotus-lib",
+ "rand",
+ "zerocopy",
+]
+
+[[package]]
+name = "lotus-utils-texture"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8707783972b2bc49c275897e84f3fc36d539506135635d3404804a918a19ae4"
 dependencies = [
  "anyhow",
  "bytebuffer",
@@ -822,9 +822,9 @@ dependencies = [
  "derivative",
  "env_logger",
  "log",
- "lotus-audio-utils",
  "lotus-lib",
- "lotus-texture-utils",
+ "lotus-utils-audio",
+ "lotus-utils-texture",
  "lscolors",
  "rand",
  "relative-path",

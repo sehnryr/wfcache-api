@@ -1,6 +1,6 @@
 use derivative::Derivative;
-use lotus_audio_utils::AudioKind;
-use lotus_texture_utils::TextureKind;
+use lotus_utils_audio::AudioKind;
+use lotus_utils_texture::TextureKind;
 use serde_json::Value;
 
 use crate::metadata::arguments::parse_arguments;
