@@ -5,7 +5,7 @@ use color_eyre::{eyre::Context, Result};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use lotus_lib::cache_pair::{CachePair, CachePairReader};
 use lotus_lib::package::PackageCollection;
-use lotus_lib::package::{PackageTrioType};
+use lotus_lib::package::PackageTrioType;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::widgets::Widget;
