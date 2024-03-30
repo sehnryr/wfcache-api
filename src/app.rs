@@ -1,18 +1,108 @@
+use std::path::PathBuf;
+
+use color_eyre::eyre::ContextCompat;
 use color_eyre::{eyre::Context, Result};
-use crossterm::event::{
-    self, Event, KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind,
-};
-use ratatui::{layout::Position, prelude::*};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use lotus_lib::cache_pair::{CachePair, CachePairReader};
+use lotus_lib::package::PackageCollection;
+use lotus_lib::package::{PackageTrioType};
+use ratatui::buffer::Buffer;
+use ratatui::layout::{Constraint, Layout, Rect};
+use ratatui::widgets::Widget;
+use ratatui::Frame;
+use ratatui_explorer::{FileExplorer, Theme};
 
 use crate::tui;
 use crate::widgets;
 
-#[derive(Debug, Default)]
 pub struct App {
-    // counter: u8,
     area: Rect,
-    button_state: widgets::button::State,
     exit: bool,
+    output_directory: PathBuf,
+    package_name: String,
+    package_collection: PackageCollection<CachePairReader>,
+    current_lotus_dir: PathBuf,
+    selected_lotus_node: usize,
+    file_explorer: FileExplorer,
+    extract: widgets::Extract,
+}
+
+impl App {
+    pub fn try_init(
+        cache_windows_directory: PathBuf,
+        package_name: String,
+        output_directory: PathBuf,
+    ) -> Result<App> {
+        let package_collection =
+            PackageCollection::<CachePairReader>::new(cache_windows_directory.clone(), true);
+        let package = package_collection
+            .get_package(&package_name)
+            .wrap_err_with(|| format!("Package {} not found", package_name))?;
+
+        let h_cache = package
+            .get(&PackageTrioType::H)
+            .wrap_err("H cache not found")?;
+        let f_cache = package.get(&PackageTrioType::F);
+        let b_cache = package.get(&PackageTrioType::B);
+
+        h_cache.read_toc().unwrap();
+        f_cache.and_then(|cache| {
+            cache.read_toc().unwrap();
+            Some(cache)
+        });
+        b_cache.and_then(|cache| {
+            cache.read_toc().unwrap();
+            Some(cache)
+        });
+
+        let theme = Theme::default().add_default_title();
+        let file_explorer = FileExplorer::with_theme(theme).wrap_err("File explorer failed")?;
+
+        let extract = widgets::Extract::new().wrap_err("Extract widget failed")?;
+
+        Ok(App {
+            area: Rect::default(),
+            exit: false,
+            output_directory,
+            package_name,
+            package_collection,
+            current_lotus_dir: PathBuf::from("/"),
+            selected_lotus_node: 0,
+            file_explorer,
+            extract,
+        })
+    }
+
+    pub fn output_directory(&self) -> &PathBuf {
+        &self.output_directory
+    }
+
+    fn get_cache(&self, package_type: &PackageTrioType) -> Option<&CachePairReader> {
+        self.package_collection
+            .get_package(&self.package_name)
+            .unwrap()
+            .get(package_type)
+    }
+
+    pub fn h_cache(&self) -> &CachePairReader {
+        self.get_cache(&PackageTrioType::H).unwrap()
+    }
+
+    pub fn f_cache(&self) -> Option<&CachePairReader> {
+        self.get_cache(&PackageTrioType::F)
+    }
+
+    pub fn b_cache(&self) -> Option<&CachePairReader> {
+        self.get_cache(&PackageTrioType::B)
+    }
+
+    pub fn current_lotus_dir(&self) -> &PathBuf {
+        &self.current_lotus_dir
+    }
+
+    pub fn selected_lotus_node(&self) -> usize {
+        self.selected_lotus_node
+    }
 }
 
 impl App {
@@ -21,6 +111,10 @@ impl App {
         while !self.exit {
             terminal.draw(|frame| {
                 self.area = frame.size();
+
+                let [_, _, extract_area] = self.compute_layout(self.area);
+                self.extract.area(extract_area);
+
                 self.render_frame(frame)
             })?;
             self.handle_events().wrap_err("handle events failed")?;
@@ -39,15 +133,21 @@ impl App {
             return Ok(());
         }
 
-        match event::read()? {
+        let event = event::read()?;
+
+        // handle file explorer events
+        self.file_explorer.handle(&event)?;
+
+        // handle extract widget events
+        self.extract.handle(&event)?;
+
+        // handle application events
+        match event {
             // it's important to check that the event is a key press event as
             // crossterm also emits key release and repeat events on Windows.
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => self
                 .handle_key_event(key_event)
                 .wrap_err_with(|| format!("handling key event failed:\n{key_event:#?}")),
-            Event::Mouse(mouse) => self
-                .handle_mouse_event(mouse)
-                .wrap_err_with(|| format!("handling mouse event failed:\n{mouse:#?}")),
             _ => Ok(()),
         }
     }
@@ -64,53 +164,62 @@ impl App {
         Ok(())
     }
 
-    fn handle_mouse_event(&mut self, mouse: MouseEvent) -> Result<()> {
-        match mouse.kind {
-            MouseEventKind::Moved => {}
-            MouseEventKind::Down(MouseButton::Left) => {
-                let [_, _, _, export_button_area] = self.compute_layout(self.area);
-                if export_button_area.contains(Position::new(mouse.column, mouse.row)) {
-                    if self.button_state == widgets::button::State::Active {
-                        self.button_state = widgets::button::State::Normal;
-                    } else {
-                        self.button_state = widgets::button::State::Active;
-                    }
-                }
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
-    fn compute_layout(&self, area: Rect) -> [Rect; 4] {
+    fn compute_layout(&self, area: Rect) -> [Rect; 3] {
         let vertical_layout = Layout::vertical([Constraint::Min(10), Constraint::Length(5)]);
         let [content_area, extract_area] = vertical_layout.areas(area);
 
         let content_layout = Layout::horizontal([Constraint::Length(30), Constraint::Min(0)]);
         let [explorer_area, info_area] = content_layout.areas(content_area);
 
-        let export_layout = Layout::horizontal([Constraint::Length(15), Constraint::Min(0)]);
-        let [export_button_area, _] = export_layout.areas(extract_area.inner(&Margin::new(2, 1)));
-
-        [explorer_area, info_area, extract_area, export_button_area]
+        [explorer_area, info_area, extract_area]
     }
 }
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let [exporer_area, info_area, extract_area, export_button_area] = self.compute_layout(area);
+        let [explorer_area, info_area, extract_area] = self.compute_layout(area);
 
-        let button_label = if self.button_state == widgets::button::State::Active {
-            "Cancel"
-        } else {
-            "Extract"
-        };
+        self.file_explorer.widget().render(explorer_area, buf);
+        widgets::Info::new().render(info_area, buf);
+        self.extract.render(extract_area, buf);
+    }
+}
 
-        widgets::explorer::Explorer::new().render(exporer_area, buf);
-        widgets::info::Info::new().render(info_area, buf);
-        widgets::extract::Extract::new().render(extract_area, buf);
-        widgets::button::Button::new(button_label)
-            .state(self.button_state)
-            .render(export_button_area, buf);
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const HOME_DIR: &str = env!("HOME"); // TODO: Windows support
+    const CACHE_WINDOWS_DIRECTORY: &str = ".steam/steam/steamapps/common/Warframe/Cache.Windows";
+    const PACKAGE_NAME: &str = "Misc";
+    const OUTPUT_DIRECTORY: &str = "Downloads/wfcache-extract";
+
+    #[test]
+    fn test_cache_windows_directory() {
+        let cache_windows_directory = PathBuf::from(HOME_DIR).join(CACHE_WINDOWS_DIRECTORY);
+        assert!(cache_windows_directory.is_dir());
+    }
+
+    #[test]
+    fn test_init() {
+        let cache_windows_directory = PathBuf::from(HOME_DIR).join(CACHE_WINDOWS_DIRECTORY);
+        let package_name = PACKAGE_NAME.to_string();
+        let output_directory = PathBuf::from(HOME_DIR).join(OUTPUT_DIRECTORY);
+
+        App::try_init(cache_windows_directory, package_name, output_directory).unwrap();
+    }
+
+    #[test]
+    fn test_init_package_toc_read() {
+        let cache_windows_directory = PathBuf::from(HOME_DIR).join(CACHE_WINDOWS_DIRECTORY);
+        let package_name = PACKAGE_NAME.to_string();
+        let output_directory = PathBuf::from(HOME_DIR).join(OUTPUT_DIRECTORY);
+
+        let app = App::try_init(cache_windows_directory, package_name, output_directory).unwrap();
+
+        // Misc package has H, F, and B caches
+        assert!(!app.h_cache().files().is_empty());
+        assert!(!app.f_cache().unwrap().files().is_empty());
+        assert!(!app.b_cache().unwrap().files().is_empty());
     }
 }
