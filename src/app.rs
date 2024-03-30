@@ -69,7 +69,7 @@ impl App {
             selected_lotus_node: 0,
             explorer_widget: file_explorer,
             info_widget: widgets::Info::new(),
-            extract_widget: widgets::Extract::new().wrap_err("Extract widget failed")?,
+            extract_widget: widgets::Extract::new(),
         })
     }
 
@@ -136,10 +136,14 @@ impl App {
         let event = event::read()?;
 
         // handle file explorer events
-        self.explorer_widget.handle(&event)?;
+        self.explorer_widget
+            .handle(&event)
+            .wrap_err("explorer widget handle failed")?;
 
         // handle extract widget events
-        self.extract_widget.handle(&event)?;
+        self.extract_widget
+            .handle(&event)
+            .wrap_err("extract widget handle failed")?;
 
         // handle application events
         match event {
