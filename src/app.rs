@@ -16,7 +16,6 @@ use crate::tui;
 use crate::widgets;
 
 pub struct App {
-    area: Rect,
     exit: bool,
     output_directory: PathBuf,
     package_name: String,
@@ -60,7 +59,6 @@ impl App {
         let file_explorer = FileExplorer::with_theme(theme).wrap_err("File explorer failed")?;
 
         Ok(App {
-            area: Rect::default(),
             exit: false,
             output_directory,
             package_name,
@@ -110,9 +108,7 @@ impl App {
     pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
         while !self.exit {
             terminal.draw(|frame| {
-                self.area = frame.size();
-
-                let [_, _, extract_area] = self.compute_layout(self.area);
+                let [_, _, extract_area] = self.compute_layout(frame.size());
                 self.extract_widget.area(extract_area);
 
                 self.render_frame(frame)
