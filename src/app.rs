@@ -24,6 +24,7 @@ pub struct App {
     current_lotus_dir: PathBuf,
     selected_lotus_node: usize,
     file_explorer: FileExplorer,
+    info_widget: widgets::Info,
     extract: widgets::Extract,
 }
 
@@ -69,6 +70,7 @@ impl App {
             current_lotus_dir: PathBuf::from("/"),
             selected_lotus_node: 0,
             file_explorer,
+            info_widget: widgets::Info::new(),
             extract,
         })
     }
@@ -180,7 +182,7 @@ impl Widget for &App {
         let [explorer_area, info_area, extract_area] = self.compute_layout(area);
 
         self.file_explorer.widget().render(explorer_area, buf);
-        widgets::Info::new().render(info_area, buf);
+        self.info_widget.render(info_area, buf);
         self.extract.render(extract_area, buf);
     }
 }
