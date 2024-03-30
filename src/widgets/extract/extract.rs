@@ -20,12 +20,12 @@ pub struct Extract {
 }
 
 impl Extract {
-    pub fn new() -> Result<Self> {
-        Ok(Self {
+    pub fn new() -> Self {
+        Self {
             active: false,
             hover: false,
             area: Rect::default(),
-        })
+        }
     }
 
     pub fn area(&mut self, area: Rect) {
@@ -107,7 +107,7 @@ mod tests {
 
     #[test]
     fn render() {
-        let extract = Extract::new().unwrap();
+        let extract = Extract::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 50, 2));
 
         extract.render(buf.area, &mut buf);
