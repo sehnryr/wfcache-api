@@ -108,7 +108,7 @@ impl App {
     pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
         while !self.exit {
             terminal.draw(|frame| {
-                let [_, _, extract_area] = self.compute_layout(frame.size());
+                let (_, _, extract_area) = self.compute_layout(frame.size());
                 self.extract_widget.area(extract_area);
 
                 self.render_frame(frame)
@@ -164,20 +164,20 @@ impl App {
         Ok(())
     }
 
-    fn compute_layout(&self, area: Rect) -> [Rect; 3] {
+    fn compute_layout(&self, area: Rect) -> (Rect, Rect, Rect) {
         let vertical_layout = Layout::vertical([Constraint::Min(10), Constraint::Length(5)]);
         let [content_area, extract_area] = vertical_layout.areas(area);
 
         let content_layout = Layout::horizontal([Constraint::Length(30), Constraint::Min(0)]);
         let [explorer_area, info_area] = content_layout.areas(content_area);
 
-        [explorer_area, info_area, extract_area]
+        (explorer_area, info_area, extract_area)
     }
 }
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let [explorer_area, info_area, extract_area] = self.compute_layout(area);
+        let (explorer_area, info_area, extract_area) = self.compute_layout(area);
 
         self.explorer_widget.widget().render(explorer_area, buf);
         self.info_widget.render(info_area, buf);
