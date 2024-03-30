@@ -1,36 +1,17 @@
-use ratatui::prelude::*;
+use ratatui::buffer::Buffer;
+use ratatui::layout::Rect;
+use ratatui::style::{Color, Style};
+use ratatui::text::Line;
+use ratatui::widgets::Widget;
+
+use super::state::State;
+use super::theme::Theme;
 
 #[derive(Debug, Clone)]
 pub struct Button<'a> {
     label: Line<'a>,
     theme: Theme,
     state: State,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum State {
-    #[default]
-    Normal,
-    Active,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Theme {
-    text: Color,
-    background: Color,
-    highlight: Color,
-    shadow: Color,
-}
-
-impl Default for Theme {
-    fn default() -> Self {
-        Self {
-            text: Color::Black,
-            background: Color::Gray,
-            highlight: Color::White,
-            shadow: Color::DarkGray,
-        }
-    }
 }
 
 impl<'a> Button<'a> {
