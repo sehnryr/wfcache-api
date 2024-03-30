@@ -23,9 +23,9 @@ pub struct App {
     package_collection: PackageCollection<CachePairReader>,
     current_lotus_dir: PathBuf,
     selected_lotus_node: usize,
-    file_explorer: FileExplorer,
+    explorer_widget: FileExplorer,
     info_widget: widgets::Info,
-    extract: widgets::Extract,
+    extract_widget: widgets::Extract,
 }
 
 impl App {
@@ -59,8 +59,6 @@ impl App {
         let theme = Theme::default().add_default_title();
         let file_explorer = FileExplorer::with_theme(theme).wrap_err("File explorer failed")?;
 
-        let extract = widgets::Extract::new().wrap_err("Extract widget failed")?;
-
         Ok(App {
             area: Rect::default(),
             exit: false,
@@ -69,9 +67,9 @@ impl App {
             package_collection,
             current_lotus_dir: PathBuf::from("/"),
             selected_lotus_node: 0,
-            file_explorer,
+            explorer_widget: file_explorer,
             info_widget: widgets::Info::new(),
-            extract,
+            extract_widget: widgets::Extract::new().wrap_err("Extract widget failed")?,
         })
     }
 
@@ -115,7 +113,7 @@ impl App {
                 self.area = frame.size();
 
                 let [_, _, extract_area] = self.compute_layout(self.area);
-                self.extract.area(extract_area);
+                self.extract_widget.area(extract_area);
 
                 self.render_frame(frame)
             })?;
@@ -138,10 +136,10 @@ impl App {
         let event = event::read()?;
 
         // handle file explorer events
-        self.file_explorer.handle(&event)?;
+        self.explorer_widget.handle(&event)?;
 
         // handle extract widget events
-        self.extract.handle(&event)?;
+        self.extract_widget.handle(&event)?;
 
         // handle application events
         match event {
@@ -181,9 +179,9 @@ impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let [explorer_area, info_area, extract_area] = self.compute_layout(area);
 
-        self.file_explorer.widget().render(explorer_area, buf);
+        self.explorer_widget.widget().render(explorer_area, buf);
         self.info_widget.render(info_area, buf);
-        self.extract.render(extract_area, buf);
+        self.extract_widget.render(extract_area, buf);
     }
 }
 
