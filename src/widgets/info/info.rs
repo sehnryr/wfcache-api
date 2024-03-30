@@ -1,6 +1,7 @@
 use ratatui::prelude::*;
 use ratatui::widgets::{block::*, Borders};
 
+#[derive(Debug, Clone, Copy)]
 pub struct Info {}
 
 impl Info {
