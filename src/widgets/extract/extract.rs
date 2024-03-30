@@ -85,7 +85,12 @@ impl Extract {
 
 impl Widget for Extract {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let instructions = Line::from(vec![" Quit ".into(), "<Q> ".bold()]);
+        let instructions = Line::from(vec![
+            " Extract ".into(),
+            "<Space> ".light_blue(),
+            "Quit ".into(),
+            "<Q> ".light_blue(),
+        ]);
         let instructions = Title::from(instructions)
             .alignment(Alignment::Center)
             .position(Position::Bottom);
@@ -119,10 +124,12 @@ mod tests {
 
         let mut expected = Buffer::with_lines(vec![
             "┌────────────────────────────────────────────────┐",
-            "└─────────────────── Quit <Q> ───────────────────┘",
+            "└─────────── Extract <Space> Quit <Q> ───────────┘",
         ]);
-        let quit_style = Style::new().bold();
-        expected.set_style(Rect::new(26, 1, 4, 1), quit_style);
+        let extract_style = Style::new().light_blue();
+        let quit_style = Style::new().light_blue();
+        expected.set_style(Rect::new(21, 1, 8, 1), extract_style);
+        expected.set_style(Rect::new(34, 1, 4, 1), quit_style);
 
         assert_buffer_eq!(buf, expected);
     }
