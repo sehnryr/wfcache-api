@@ -10,11 +10,12 @@ use ratatui::text::Line;
 use ratatui::widgets::block::{Position, Title};
 use ratatui::widgets::{Block, Borders, Widget};
 
-use crate::widgets::button::{self, Button};
+use crate::widgets::button::Button;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Extract {
     active: bool,
+    hover: bool,
     area: Rect,
 }
 
@@ -22,6 +23,7 @@ impl Extract {
     pub fn new() -> Result<Self> {
         Ok(Self {
             active: false,
+            hover: false,
             area: Rect::default(),
         })
     }
@@ -57,7 +59,11 @@ impl Extract {
 
     fn handle_mouse_event(&mut self, mouse_event: &MouseEvent) -> Result<()> {
         match mouse_event.kind {
-            MouseEventKind::Moved => {}
+            MouseEventKind::Moved => {
+                let [export_button_area] = self.compute_layout();
+                self.hover = export_button_area
+                    .contains(layout::Position::new(mouse_event.column, mouse_event.row));
+            }
             MouseEventKind::Down(MouseButton::Left) => {
                 let [export_button_area] = self.compute_layout();
                 if export_button_area
@@ -79,24 +85,15 @@ impl Widget for Extract {
             .alignment(Alignment::Center)
             .position(Position::Bottom);
 
-        let extract_button_label;
-        let extract_button_state;
-        if self.active {
-            extract_button_label = "Cancel";
-            extract_button_state = button::State::Active;
-        } else {
-            extract_button_label = "Extract";
-            extract_button_state = button::State::Normal;
-        };
-
         let [export_button_area] = self.compute_layout();
 
         Block::default()
             .title(instructions)
             .borders(Borders::ALL)
             .render(area, buf);
-        Button::new(extract_button_label)
-            .state(extract_button_state)
+        Button::new(if self.active { "Cancel" } else { "Extract" })
+            .active(self.active)
+            .hover(self.hover)
             .render(export_button_area, buf);
     }
 }
