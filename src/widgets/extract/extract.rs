@@ -32,10 +32,15 @@ impl Extract {
         self.area = area;
     }
 
-    fn compute_layout(&self) -> Rect {
-        let export_layout = Layout::horizontal([Constraint::Length(15), Constraint::Min(0)]);
-        let [export_button_area, _] = export_layout.areas(self.area.inner(&Margin::new(2, 1)));
-        export_button_area
+    fn compute_layout(&self) -> (Rect, Rect) {
+        let export_layout = Layout::horizontal([
+            Constraint::Length(15),
+            Constraint::Max(30),
+            Constraint::Min(0),
+        ]);
+        let [export_button_area, export_progress_area, _] =
+            export_layout.areas(self.area.inner(&Margin::new(2, 1)));
+        (export_button_area, export_progress_area)
     }
 
     pub fn handle(&mut self, event: &Event) -> Result<()> {
@@ -60,12 +65,12 @@ impl Extract {
     fn handle_mouse_event(&mut self, mouse_event: &MouseEvent) -> Result<()> {
         match mouse_event.kind {
             MouseEventKind::Moved => {
-                let export_button_area = self.compute_layout();
+                let (export_button_area, _) = self.compute_layout();
                 self.hover = export_button_area
                     .contains(layout::Position::new(mouse_event.column, mouse_event.row));
             }
             MouseEventKind::Down(MouseButton::Left) => {
-                let export_button_area = self.compute_layout();
+                let (export_button_area, _) = self.compute_layout();
                 if export_button_area
                     .contains(layout::Position::new(mouse_event.column, mouse_event.row))
                 {
@@ -85,7 +90,7 @@ impl Widget for Extract {
             .alignment(Alignment::Center)
             .position(Position::Bottom);
 
-        let export_button_area = self.compute_layout();
+        let (export_button_area, _) = self.compute_layout();
 
         Block::default()
             .title(instructions)
