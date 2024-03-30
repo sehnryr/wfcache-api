@@ -4,14 +4,14 @@ use ratatui::style::{Color, Style};
 use ratatui::text::Line;
 use ratatui::widgets::Widget;
 
-use super::state::State;
 use super::theme::Theme;
 
 #[derive(Debug, Clone)]
 pub struct Button<'a> {
     label: Line<'a>,
     theme: Theme,
-    state: State,
+    active: bool,
+    hover: bool,
 }
 
 impl<'a> Button<'a> {
@@ -19,20 +19,33 @@ impl<'a> Button<'a> {
         Self {
             label: label.into(),
             theme: Theme::default(),
-            state: State::Normal,
+            active: false,
+            hover: false,
         }
     }
 
-    pub const fn state(mut self, state: State) -> Self {
-        self.state = state;
+    pub const fn active(mut self, active: bool) -> Self {
+        self.active = active;
+        self
+    }
+
+    pub const fn hover(mut self, hover: bool) -> Self {
+        self.hover = hover;
         self
     }
 
     const fn colors(&self) -> (Color, Color, Color, Color) {
         let theme = self.theme;
-        match self.state {
-            State::Normal => (theme.background, theme.text, theme.shadow, theme.highlight),
-            State::Active => (theme.background, theme.text, theme.highlight, theme.shadow),
+        let mut background_color = theme.background;
+
+        if self.hover {
+            background_color = theme.highlight;
+        }
+
+        if self.active {
+            (background_color, theme.text, theme.highlight, theme.shadow)
+        } else {
+            (background_color, theme.text, theme.shadow, theme.highlight)
         }
     }
 }
@@ -101,7 +114,7 @@ mod tests {
 
     #[test]
     fn render_active() {
-        let info = Button::new("Cancel").state(State::Active);
+        let info = Button::new("Cancel").active(true);
         let mut buf = Buffer::empty(Rect::new(0, 0, 15, 3));
 
         info.render(buf.area, &mut buf);
