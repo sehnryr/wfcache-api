@@ -2,18 +2,18 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::Line;
-use ratatui::widgets::Widget;
+use ratatui::widgets::WidgetRef;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct ButtonLabel<'a>(&'a str);
 
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone)]
 struct ButtonState {
     active: bool,
     hover: bool,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct ButtonTheme {
     text: Color,
     background: Color,
@@ -32,7 +32,7 @@ impl Default for ButtonTheme {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Button<'a> {
     label: ButtonLabel<'a>,
     theme: ButtonTheme,
@@ -59,27 +59,23 @@ impl<'a> Button<'a> {
     pub fn toggle(&mut self) {
         self.state.active = !self.state.active;
     }
-
-    pub fn colors(&self) -> (Color, Color, Color, Color) {
-        let theme = self.theme;
-        let mut background_color = theme.background;
-
-        if self.state.hover {
-            background_color = theme.highlight;
-        }
-
-        if self.state.active {
-            (background_color, theme.text, theme.highlight, theme.shadow)
-        } else {
-            (background_color, theme.text, theme.shadow, theme.highlight)
-        }
-    }
 }
 
-impl<'a> Widget for Button<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let (background, text, shadow, highlight) = self.colors();
-        buf.set_style(area, Style::new().bg(background).fg(text));
+impl WidgetRef for Button<'_> {
+    fn render_ref(&self, area: Rect, buf: &mut Buffer) {
+        if area.height == 0 {
+            return;
+        }
+
+        let background_color = self.theme.background;
+        let text_color = self.theme.text;
+        let (shadow_color, highlight_color) = if self.state.active {
+            (self.theme.highlight, self.theme.shadow)
+        } else {
+            (self.theme.shadow, self.theme.highlight)
+        };
+
+        buf.set_style(area, Style::new().bg(background_color).fg(text_color));
 
         // render top line if there's enough space
         if area.height > 2 {
@@ -87,7 +83,7 @@ impl<'a> Widget for Button<'a> {
                 area.x,
                 area.y,
                 "▔".repeat(area.width as usize),
-                Style::new().fg(highlight).bg(background),
+                Style::new().fg(highlight_color).bg(background_color),
             );
         }
         // render bottom line if there's enough space
@@ -96,7 +92,7 @@ impl<'a> Widget for Button<'a> {
                 area.x,
                 area.y + area.height - 1,
                 "▁".repeat(area.width as usize),
-                Style::new().fg(shadow).bg(background),
+                Style::new().fg(shadow_color).bg(background_color),
             );
         }
         // render label centered
@@ -126,7 +122,7 @@ mod tests {
         let info = Button::new("Extract");
         let mut buf = Buffer::empty(Rect::new(0, 0, 15, 3));
 
-        info.render(buf.area, &mut buf);
+        info.render_ref(buf.area, &mut buf);
 
         let mut expected = Buffer::with_lines(vec![
             "▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔",
@@ -149,7 +145,7 @@ mod tests {
         };
         let mut buf = Buffer::empty(Rect::new(0, 0, 15, 3));
 
-        info.render(buf.area, &mut buf);
+        info.render_ref(buf.area, &mut buf);
 
         let mut expected = Buffer::with_lines(vec![
             "▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔",
