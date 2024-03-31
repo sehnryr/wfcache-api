@@ -1,14 +1,14 @@
 use std::io::Result;
 
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{Event};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Constraint, Layout, Margin, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::widgets::block::{Position, Title};
-use ratatui::widgets::{Block, Borders, Widget};
+use ratatui::widgets::{Block, Borders, Widget, WidgetRef};
 
-use crate::widgets::button::Button;
+use super::button::Button;
 
 #[derive(Debug, Clone)]
 pub struct Extract<'a> {
@@ -18,7 +18,7 @@ pub struct Extract<'a> {
 impl Extract<'_> {
     pub fn new<'a>() -> Self {
         Self {
-            button_widget: Button::new("Extract"),
+            button_widget: Button::new(),
         }
     }
 
@@ -34,26 +34,13 @@ impl Extract<'_> {
     }
 
     pub fn handle(&mut self, event: &Event) -> Result<()> {
-        match event {
-            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                self.handle_key_event(key_event.clone())?
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<()> {
-        match key_event.code {
-            KeyCode::Char(' ') => self.button_widget.toggle(),
-            _ => {}
-        };
+        self.button_widget.handle(event)?;
         Ok(())
     }
 }
 
 impl Widget for Extract<'_> {
-    fn render(mut self, area: Rect, buf: &mut Buffer) {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let instructions = Line::from(vec![
             " Extract ".into(),
             "<Space> ".light_blue(),
@@ -71,15 +58,7 @@ impl Widget for Extract<'_> {
 
         let (export_button_area, _) = self.compute_layout(area);
 
-        self.button_widget
-            .set_label(if self.button_widget.is_active() {
-                "Cancel"
-            } else {
-                "Extract"
-            });
-        #[cfg(test)]
-        self.button_widget.set_label(""); // to avoid the label overlapping the instructions
-        self.button_widget.render(export_button_area, buf);
+        self.button_widget.render_ref(export_button_area, buf);
     }
 }
 
