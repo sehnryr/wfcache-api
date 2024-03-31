@@ -5,15 +5,6 @@ use ratatui::text::Line;
 use ratatui::widgets::WidgetRef;
 
 #[derive(Debug, Clone)]
-struct ButtonLabel<'a>(&'a str);
-
-#[derive(Default, Debug, Clone)]
-struct ButtonState {
-    active: bool,
-    hover: bool,
-}
-
-#[derive(Debug, Clone)]
 struct ButtonTheme {
     text: Color,
     background: Color,
@@ -34,30 +25,30 @@ impl Default for ButtonTheme {
 
 #[derive(Debug, Clone)]
 pub struct Button<'a> {
-    label: ButtonLabel<'a>,
+    label: &'a str,
     theme: ButtonTheme,
-    state: ButtonState,
+    active: bool,
 }
 
 impl<'a> Button<'a> {
     pub fn new(label: &'a str) -> Self {
         Self {
-            label: ButtonLabel(label),
+            label,
             theme: ButtonTheme::default(),
-            state: ButtonState::default(),
+            active: false,
         }
     }
 
     pub fn set_label(&mut self, label: &'a str) {
-        self.label.0 = label;
+        self.label = label;
     }
 
     pub fn is_active(&self) -> bool {
-        self.state.active
+        self.active
     }
 
     pub fn toggle(&mut self) {
-        self.state.active = !self.state.active;
+        self.active = !self.active;
     }
 }
 
@@ -69,7 +60,7 @@ impl WidgetRef for Button<'_> {
 
         let background_color = self.theme.background;
         let text_color = self.theme.text;
-        let (shadow_color, highlight_color) = if self.state.active {
+        let (shadow_color, highlight_color) = if self.active {
             (self.theme.highlight, self.theme.shadow)
         } else {
             (self.theme.shadow, self.theme.highlight)
@@ -96,7 +87,7 @@ impl WidgetRef for Button<'_> {
             );
         }
         // render label centered
-        let label = Line::from(self.label.0);
+        let label = Line::from(self.label);
         buf.set_line(
             area.x + (area.width.saturating_sub(label.width() as u16)) / 2,
             area.y + (area.height.saturating_sub(1)) / 2,
@@ -140,7 +131,7 @@ mod tests {
     fn render_active() {
         let info = {
             let mut button = Button::new("Cancel");
-            button.state.active = true;
+            button.active = true;
             button
         };
         let mut buf = Buffer::empty(Rect::new(0, 0, 15, 3));
