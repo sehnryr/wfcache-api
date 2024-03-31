@@ -1,7 +1,4 @@
-use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
 use ratatui::style::Color;
-use ratatui::widgets::Widget;
 
 use super::theme::Theme;
 
@@ -16,7 +13,6 @@ pub(super) struct ButtonState {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Button<'a> {
-    pub(super) area: Rect,
     pub(super) label: ButtonLabel<'a>,
     theme: Theme,
     pub(super) state: ButtonState,
@@ -25,7 +21,6 @@ pub struct Button<'a> {
 impl<'a> Button<'a> {
     pub fn new(label: &'a str) -> Self {
         Self {
-            area: Rect::default(),
             label: ButtonLabel(label),
             theme: Theme::default(),
             state: ButtonState::default(),
@@ -34,10 +29,6 @@ impl<'a> Button<'a> {
 
     pub fn set_label(&mut self, label: &'a str) {
         self.label.0 = label;
-    }
-
-    pub fn set_area(&mut self, area: Rect) {
-        self.area = area;
     }
 
     pub fn is_active(&self) -> bool {
@@ -61,9 +52,5 @@ impl<'a> Button<'a> {
         } else {
             (background_color, theme.text, theme.shadow, theme.highlight)
         }
-    }
-
-    pub fn render_widget(&self, buf: &mut Buffer) {
-        self.render(self.area, buf);
     }
 }

@@ -1,5 +1,4 @@
 mod button;
-mod event;
 mod theme;
 mod widget;
 
