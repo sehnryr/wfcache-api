@@ -1,37 +1,55 @@
+use std::io::Result;
+
+use crossterm::event::{Event, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
+use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::Line;
 use ratatui::widgets::Widget;
 
 use super::theme::Theme;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Button<'a> {
-    label: Line<'a>,
+    area: Rect,
+    label: &'a str,
     theme: Theme,
     active: bool,
     hover: bool,
 }
 
 impl<'a> Button<'a> {
-    pub fn new<T: Into<Line<'a>>>(label: T) -> Self {
+    pub fn new(label: &'a str) -> Self {
         Self {
-            label: label.into(),
+            area: Rect::default(),
+            label,
             theme: Theme::default(),
             active: false,
             hover: false,
         }
     }
 
+    pub const fn label(mut self, label: &'a str) -> Self {
+        self.label = label;
+        self
+    }
+
+    pub fn area(&mut self, area: Rect) {
+        self.area = area;
+    }
+
+    #[cfg(test)]
     pub const fn active(mut self, active: bool) -> Self {
         self.active = active;
         self
     }
 
-    pub const fn hover(mut self, hover: bool) -> Self {
-        self.hover = hover;
-        self
+    pub const fn is_active(&self) -> bool {
+        self.active
+    }
+
+    pub fn toggle(&mut self) {
+        self.active = !self.active;
     }
 
     const fn colors(&self) -> (Color, Color, Color, Color) {
@@ -47,6 +65,38 @@ impl<'a> Button<'a> {
         } else {
             (background_color, theme.text, theme.shadow, theme.highlight)
         }
+    }
+
+    pub fn handle(&mut self, event: &Event) -> Result<()> {
+        match event {
+            Event::Mouse(mouse_event) => self.handle_mouse_event(mouse_event)?,
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn handle_mouse_event(&mut self, mouse_event: &MouseEvent) -> Result<()> {
+        match mouse_event.kind {
+            MouseEventKind::Moved => {
+                self.hover = self
+                    .area
+                    .contains(Position::new(mouse_event.column, mouse_event.row));
+            }
+            MouseEventKind::Down(MouseButton::Left) => {
+                if self
+                    .area
+                    .contains(Position::new(mouse_event.column, mouse_event.row))
+                {
+                    self.active = !self.active;
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    pub fn render_widget(&self, buf: &mut Buffer) {
+        self.render(self.area, buf);
     }
 }
 
@@ -74,10 +124,11 @@ impl<'a> Widget for Button<'a> {
             );
         }
         // render label centered
+        let label = Line::from(self.label);
         buf.set_line(
-            area.x + (area.width.saturating_sub(self.label.width() as u16)) / 2,
+            area.x + (area.width.saturating_sub(label.width() as u16)) / 2,
             area.y + (area.height.saturating_sub(1)) / 2,
-            &self.label,
+            &label,
             area.width,
         );
     }

@@ -15,7 +15,7 @@ use ratatui_explorer::{FileExplorer, Theme};
 use crate::tui;
 use crate::widgets;
 
-pub struct App {
+pub struct App<'a> {
     exit: bool,
     output_directory: PathBuf,
     package_name: String,
@@ -24,15 +24,15 @@ pub struct App {
     selected_lotus_node: usize,
     explorer_widget: FileExplorer,
     info_widget: widgets::Info,
-    extract_widget: widgets::Extract,
+    extract_widget: widgets::Extract<'a>,
 }
 
-impl App {
-    pub fn try_init(
+impl App<'_> {
+    pub fn try_init<'a>(
         cache_windows_directory: PathBuf,
         package_name: String,
         output_directory: PathBuf,
-    ) -> Result<App> {
+    ) -> Result<App<'a>> {
         let package_collection =
             PackageCollection::<CachePairReader>::new(cache_windows_directory.clone(), true);
         let package = package_collection
@@ -103,7 +103,7 @@ impl App {
     }
 }
 
-impl App {
+impl App<'_> {
     /// runs the application's main loop until the user quits
     pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
         while !self.exit {
@@ -175,7 +175,7 @@ impl App {
     }
 }
 
-impl Widget for &App {
+impl Widget for &App<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let (explorer_area, info_area, extract_area) = self.compute_layout(area);
 

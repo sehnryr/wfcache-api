@@ -1,10 +1,8 @@
 use std::io::Result;
 
-use crossterm::event::{
-    Event, KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind,
-};
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::buffer::Buffer;
-use ratatui::layout::{self, Alignment, Constraint, Layout, Margin, Rect};
+use ratatui::layout::{Alignment, Constraint, Layout, Margin, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::widgets::block::{Position, Title};
@@ -12,24 +10,25 @@ use ratatui::widgets::{Block, Borders, Widget};
 
 use crate::widgets::button::Button;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Extract {
-    active: bool,
-    hover: bool,
+#[derive(Debug, Clone, Copy)]
+pub struct Extract<'a> {
     area: Rect,
+    button_widget: Button<'a>,
 }
 
-impl Extract {
-    pub fn new() -> Self {
+impl Extract<'_> {
+    pub fn new<'a>() -> Self {
         Self {
-            active: false,
-            hover: false,
             area: Rect::default(),
+            button_widget: Button::new("Extract"),
         }
     }
 
     pub fn area(&mut self, area: Rect) {
         self.area = area;
+
+        let (export_button_area, _) = self.compute_layout();
+        self.button_widget.area(export_button_area);
     }
 
     fn compute_layout(&self) -> (Rect, Rect) {
@@ -44,11 +43,12 @@ impl Extract {
     }
 
     pub fn handle(&mut self, event: &Event) -> Result<()> {
+        self.button_widget.handle(event)?;
+
         match event {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 self.handle_key_event(key_event.clone())?
             }
-            Event::Mouse(mouse_event) => self.handle_mouse_event(mouse_event)?,
             _ => {}
         }
         Ok(())
@@ -56,34 +56,14 @@ impl Extract {
 
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<()> {
         match key_event.code {
-            KeyCode::Char(' ') => self.active = !self.active,
+            KeyCode::Char(' ') => self.button_widget.toggle(),
             _ => {}
         };
         Ok(())
     }
-
-    fn handle_mouse_event(&mut self, mouse_event: &MouseEvent) -> Result<()> {
-        match mouse_event.kind {
-            MouseEventKind::Moved => {
-                let (export_button_area, _) = self.compute_layout();
-                self.hover = export_button_area
-                    .contains(layout::Position::new(mouse_event.column, mouse_event.row));
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                let (export_button_area, _) = self.compute_layout();
-                if export_button_area
-                    .contains(layout::Position::new(mouse_event.column, mouse_event.row))
-                {
-                    self.active = !self.active;
-                }
-            }
-            _ => {}
-        }
-        Ok(())
-    }
 }
 
-impl Widget for Extract {
+impl Widget for Extract<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let instructions = Line::from(vec![
             " Extract ".into(),
@@ -95,16 +75,18 @@ impl Widget for Extract {
             .alignment(Alignment::Center)
             .position(Position::Bottom);
 
-        let (export_button_area, _) = self.compute_layout();
-
         Block::default()
             .title(instructions)
             .borders(Borders::ALL)
             .render(area, buf);
-        Button::new(if self.active { "Cancel" } else { "Extract" })
-            .active(self.active)
-            .hover(self.hover)
-            .render(export_button_area, buf);
+
+        self.button_widget
+            .label(if self.button_widget.is_active() {
+                "Cancel"
+            } else {
+                "Extract"
+            })
+            .render_widget(buf);
     }
 }
 
