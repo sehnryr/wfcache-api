@@ -72,7 +72,11 @@ mod tests {
 
     #[test]
     fn render_active() {
-        let info = Button::new("Cancel").active(true);
+        let info = {
+            let mut button = Button::new("Cancel");
+            button.state.active = true;
+            button
+        };
         let mut buf = Buffer::empty(Rect::new(0, 0, 15, 3));
 
         info.render(buf.area, &mut buf);
