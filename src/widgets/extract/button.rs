@@ -3,7 +3,7 @@ use std::io::Result;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
-use ratatui::widgets::WidgetRef;
+use ratatui::widgets::{Widget, WidgetRef};
 
 use crate::widgets::button::Button as ButtonWidget;
 
@@ -59,6 +59,6 @@ impl Button<'_> {
 
 impl WidgetRef for Button<'_> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
-        self.button_widget.render_ref(area, buf);
+        self.button_widget.render(area, buf);
     }
 }

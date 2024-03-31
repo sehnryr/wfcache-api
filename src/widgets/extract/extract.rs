@@ -58,7 +58,7 @@ impl WidgetRef for Extract<'_> {
 
         let (export_button_area, _) = self.compute_layout(area);
 
-        self.button_widget.render_ref(export_button_area, buf);
+        self.button_widget.render(export_button_area, buf);
     }
 }
 
