@@ -110,14 +110,14 @@ mod tests {
 
     #[test]
     fn render_default() {
-        let info = Button::new("Extract");
+        let info = Button::new("Button");
         let mut buf = Buffer::empty(Rect::new(0, 0, 15, 3));
 
         info.render_ref(buf.area, &mut buf);
 
         let mut expected = Buffer::with_lines(vec![
             "▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔",
-            "    Extract    ",
+            "    Button     ",
             "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁",
         ]);
         expected.set_style(Rect::new(0, 0, 15, 1), HIGHLIGHT_STYLE);
@@ -130,7 +130,7 @@ mod tests {
     #[test]
     fn render_active() {
         let info = {
-            let mut button = Button::new("Cancel");
+            let mut button = Button::new("Button");
             button.active = true;
             button
         };
@@ -140,7 +140,7 @@ mod tests {
 
         let mut expected = Buffer::with_lines(vec![
             "▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔",
-            "    Cancel     ",
+            "    Button     ",
             "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁",
         ]);
         expected.set_style(Rect::new(0, 0, 15, 1), SHADOW_STYLE);
