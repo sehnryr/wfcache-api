@@ -163,4 +163,61 @@ mod tests {
 
         assert_buffer_eq!(buf, expected);
     }
+
+    #[test]
+    fn render_small() {
+        let info = Button::new("Button");
+        let mut buf = Buffer::empty(Rect::new(0, 0, 15, 2));
+
+        info.render_ref(buf.area, &mut buf);
+
+        let mut expected = Buffer::with_lines(vec!["    Button     ", "▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁"]);
+        expected.set_style(Rect::new(0, 0, 15, 1), TEXT_STYLE);
+        expected.set_style(Rect::new(0, 1, 15, 1), SHADOW_STYLE);
+
+        assert_buffer_eq!(buf, expected);
+    }
+
+    #[test]
+    fn render_smaller() {
+        let info = Button::new("Button");
+        let mut buf = Buffer::empty(Rect::new(0, 0, 15, 1));
+
+        info.render_ref(buf.area, &mut buf);
+
+        let mut expected = Buffer::with_lines(vec!["    Button     "]);
+        expected.set_style(Rect::new(0, 0, 15, 1), TEXT_STYLE);
+
+        assert_buffer_eq!(buf, expected);
+    }
+
+    #[test]
+    fn render_custom_labels() {
+        let mut info = Button::new("Button")
+            .active_label("Active")
+            .inactive_label("Inactive");
+        let mut buf = Buffer::empty(Rect::new(0, 0, 15, 1));
+
+        // render default label (inactive)
+        info.render_ref(buf.area, &mut buf);
+
+        let expected = {
+            let mut expected = Buffer::with_lines(vec!["   Inactive    "]);
+            expected.set_style(Rect::new(0, 0, 15, 1), TEXT_STYLE);
+            expected
+        };
+        assert_buffer_eq!(buf, expected);
+
+        // render active label
+        buf.reset();
+        info.toggle();
+        info.render_ref(buf.area, &mut buf);
+
+        let expected = {
+            let mut expected = Buffer::with_lines(vec!["    Active     "]);
+            expected.set_style(Rect::new(0, 0, 15, 1), TEXT_STYLE);
+            expected
+        };
+        assert_buffer_eq!(buf, expected);
+    }
 }
