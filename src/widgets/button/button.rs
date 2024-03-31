@@ -5,6 +5,9 @@ use ratatui::widgets::Widget;
 
 use super::theme::Theme;
 
+#[derive(Debug, Clone, Copy)]
+pub(super) struct ButtonLabel<'a>(pub(super) &'a str);
+
 #[derive(Default, Debug, Clone, Copy)]
 pub(super) struct ButtonState {
     pub(super) active: bool,
@@ -14,7 +17,7 @@ pub(super) struct ButtonState {
 #[derive(Debug, Clone, Copy)]
 pub struct Button<'a> {
     pub(super) area: Rect,
-    pub(super) label: &'a str,
+    pub(super) label: ButtonLabel<'a>,
     theme: Theme,
     pub(super) state: ButtonState,
 }
@@ -23,14 +26,14 @@ impl<'a> Button<'a> {
     pub fn new(label: &'a str) -> Self {
         Self {
             area: Rect::default(),
-            label,
+            label: ButtonLabel(label),
             theme: Theme::default(),
             state: ButtonState::default(),
         }
     }
 
     pub fn set_label(&mut self, label: &'a str) {
-        self.label = label;
+        self.label.0 = label;
     }
 
     pub fn set_area(&mut self, area: Rect) {

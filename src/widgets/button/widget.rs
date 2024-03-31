@@ -30,7 +30,7 @@ impl<'a> Widget for Button<'a> {
             );
         }
         // render label centered
-        let label = Line::from(self.label);
+        let label = Line::from(self.label.0);
         buf.set_line(
             area.x + (area.width.saturating_sub(label.width() as u16)) / 2,
             area.y + (area.height.saturating_sub(1)) / 2,
