@@ -176,7 +176,7 @@ impl Widget for &App<'_> {
 
         self.explorer_widget.widget().render(explorer_area, buf);
         self.info_widget.render(info_area, buf);
-        self.extract_widget.render(extract_area, buf);
+        self.extract_widget.clone().render(extract_area, buf);
     }
 }
 

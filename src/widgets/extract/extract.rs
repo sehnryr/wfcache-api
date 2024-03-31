@@ -10,7 +10,7 @@ use ratatui::widgets::{Block, Borders, Widget};
 
 use crate::widgets::button::Button;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Extract<'a> {
     button_widget: Button<'a>,
 }
