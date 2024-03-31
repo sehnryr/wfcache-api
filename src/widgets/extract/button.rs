@@ -7,9 +7,6 @@ use ratatui::widgets::{Widget, WidgetRef};
 
 use crate::widgets::button::Button;
 
-const ACTIVE_LABEL: &'static str = "Cancel";
-const INACTIVE_LABEL: &'static str = "Extract";
-
 #[derive(Debug, Clone)]
 pub struct ExtractButton<'a> {
     button_widget: Button<'a>,
@@ -17,25 +14,15 @@ pub struct ExtractButton<'a> {
 
 impl ExtractButton<'_> {
     pub fn new<'a>() -> Self {
-        #[cfg(not(test))]
-        // to avoid the label overlapping the instructions
-        return Self {
-            button_widget: Button::new(INACTIVE_LABEL),
-        };
-        #[cfg(test)]
-        return Self {
-            button_widget: Button::new(""),
-        };
+        Self {
+            button_widget: Button::new("")
+                .active_label("Cancel")
+                .inactive_label("Extract"),
+        }
     }
 
     fn toggle(&mut self) {
         self.button_widget.toggle();
-        self.button_widget
-            .set_label(if self.button_widget.is_active() {
-                ACTIVE_LABEL
-            } else {
-                INACTIVE_LABEL
-            });
     }
 
     pub fn handle(&mut self, event: &Event) -> Result<()> {
