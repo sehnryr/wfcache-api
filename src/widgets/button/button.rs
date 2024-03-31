@@ -29,7 +29,7 @@ impl<'a> Button<'a> {
         }
     }
 
-    pub const fn label(mut self, label: &'a str) -> Self {
+    pub fn label(mut self, label: &'a str) -> Self {
         self.label = label;
         self
     }
@@ -39,12 +39,12 @@ impl<'a> Button<'a> {
     }
 
     #[cfg(test)]
-    pub const fn active(mut self, active: bool) -> Self {
+    pub fn active(mut self, active: bool) -> Self {
         self.state.active = active;
         self
     }
 
-    pub const fn is_active(&self) -> bool {
+    pub fn is_active(&self) -> bool {
         self.state.active
     }
 
