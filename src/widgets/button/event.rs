@@ -17,7 +17,7 @@ impl Button<'_> {
     fn handle_mouse_event(&mut self, mouse_event: &MouseEvent) -> Result<()> {
         match mouse_event.kind {
             MouseEventKind::Moved => {
-                self.hover = self
+                self.state.hover = self
                     .area
                     .contains(Position::new(mouse_event.column, mouse_event.row));
             }
@@ -26,7 +26,7 @@ impl Button<'_> {
                     .area
                     .contains(Position::new(mouse_event.column, mouse_event.row))
                 {
-                    self.active = !self.active;
+                    self.toggle();
                 }
             }
             _ => {}
