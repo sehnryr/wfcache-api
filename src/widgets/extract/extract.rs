@@ -28,7 +28,7 @@ impl Extract<'_> {
         self.area = area;
 
         let (export_button_area, _) = self.compute_layout();
-        self.button_widget.area(export_button_area);
+        self.button_widget.set_area(export_button_area);
     }
 
     fn compute_layout(&self) -> (Rect, Rect) {
@@ -64,7 +64,7 @@ impl Extract<'_> {
 }
 
 impl Widget for Extract<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render(mut self, area: Rect, buf: &mut Buffer) {
         let instructions = Line::from(vec![
             " Extract ".into(),
             "<Space> ".light_blue(),
@@ -81,12 +81,12 @@ impl Widget for Extract<'_> {
             .render(area, buf);
 
         self.button_widget
-            .label(if self.button_widget.is_active() {
+            .set_label(if self.button_widget.is_active() {
                 "Cancel"
             } else {
                 "Extract"
-            })
-            .render_widget(buf);
+            });
+        self.button_widget.render_widget(buf);
     }
 }
 

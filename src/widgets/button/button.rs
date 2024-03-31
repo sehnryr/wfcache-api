@@ -29,19 +29,12 @@ impl<'a> Button<'a> {
         }
     }
 
-    pub fn label(mut self, label: &'a str) -> Self {
+    pub fn set_label(&mut self, label: &'a str) {
         self.label = label;
-        self
     }
 
-    pub fn area(&mut self, area: Rect) {
+    pub fn set_area(&mut self, area: Rect) {
         self.area = area;
-    }
-
-    #[cfg(test)]
-    pub fn active(mut self, active: bool) -> Self {
-        self.state.active = active;
-        self
     }
 
     pub fn is_active(&self) -> bool {
@@ -52,7 +45,7 @@ impl<'a> Button<'a> {
         self.state.active = !self.state.active;
     }
 
-    pub(super) fn colors(&self) -> (Color, Color, Color, Color) {
+    pub fn colors(&self) -> (Color, Color, Color, Color) {
         let theme = self.theme;
         let mut background_color = theme.background;
 
