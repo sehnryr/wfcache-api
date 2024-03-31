@@ -1,10 +1,80 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
-use ratatui::style::Style;
+use ratatui::style::{Color, Style};
 use ratatui::text::Line;
 use ratatui::widgets::Widget;
 
-use super::button::Button;
+#[derive(Debug, Clone, Copy)]
+struct ButtonLabel<'a>(&'a str);
+
+#[derive(Default, Debug, Clone, Copy)]
+struct ButtonState {
+    active: bool,
+    hover: bool,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Theme {
+    text: Color,
+    background: Color,
+    highlight: Color,
+    shadow: Color,
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Self {
+            text: Color::Black,
+            background: Color::Gray,
+            highlight: Color::White,
+            shadow: Color::DarkGray,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Button<'a> {
+    label: ButtonLabel<'a>,
+    theme: Theme,
+    state: ButtonState,
+}
+
+impl<'a> Button<'a> {
+    pub fn new(label: &'a str) -> Self {
+        Self {
+            label: ButtonLabel(label),
+            theme: Theme::default(),
+            state: ButtonState::default(),
+        }
+    }
+
+    pub fn set_label(&mut self, label: &'a str) {
+        self.label.0 = label;
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.state.active
+    }
+
+    pub fn toggle(&mut self) {
+        self.state.active = !self.state.active;
+    }
+
+    pub fn colors(&self) -> (Color, Color, Color, Color) {
+        let theme = self.theme;
+        let mut background_color = theme.background;
+
+        if self.state.hover {
+            background_color = theme.highlight;
+        }
+
+        if self.state.active {
+            (background_color, theme.text, theme.highlight, theme.shadow)
+        } else {
+            (background_color, theme.text, theme.shadow, theme.highlight)
+        }
+    }
+}
 
 impl<'a> Widget for Button<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
