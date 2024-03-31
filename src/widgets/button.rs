@@ -14,14 +14,14 @@ struct ButtonState {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct Theme {
+struct ButtonTheme {
     text: Color,
     background: Color,
     highlight: Color,
     shadow: Color,
 }
 
-impl Default for Theme {
+impl Default for ButtonTheme {
     fn default() -> Self {
         Self {
             text: Color::Black,
@@ -35,7 +35,7 @@ impl Default for Theme {
 #[derive(Debug, Clone, Copy)]
 pub struct Button<'a> {
     label: ButtonLabel<'a>,
-    theme: Theme,
+    theme: ButtonTheme,
     state: ButtonState,
 }
 
@@ -43,7 +43,7 @@ impl<'a> Button<'a> {
     pub fn new(label: &'a str) -> Self {
         Self {
             label: ButtonLabel(label),
-            theme: Theme::default(),
+            theme: ButtonTheme::default(),
             state: ButtonState::default(),
         }
     }
