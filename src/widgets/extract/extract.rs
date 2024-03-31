@@ -1,6 +1,6 @@
 use std::io::Result;
 
-use crossterm::event::{Event};
+use crossterm::event::Event;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Constraint, Layout, Margin, Rect};
 use ratatui::style::Stylize;
@@ -39,8 +39,8 @@ impl Extract<'_> {
     }
 }
 
-impl Widget for Extract<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl WidgetRef for Extract<'_> {
+    fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         let instructions = Line::from(vec![
             " Extract ".into(),
             "<Space> ".light_blue(),
