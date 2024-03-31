@@ -107,12 +107,7 @@ impl App<'_> {
     /// runs the application's main loop until the user quits
     pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
         while !self.exit {
-            terminal.draw(|frame| {
-                let (_, _, extract_area) = self.compute_layout(frame.size());
-                self.extract_widget.area(extract_area);
-
-                self.render_frame(frame)
-            })?;
+            terminal.draw(|frame| self.render_frame(frame))?;
             self.handle_events().wrap_err("handle events failed")?;
         }
         Ok(())

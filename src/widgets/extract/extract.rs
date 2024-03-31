@@ -12,39 +12,28 @@ use crate::widgets::button::Button;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Extract<'a> {
-    area: Rect,
     button_widget: Button<'a>,
 }
 
 impl Extract<'_> {
     pub fn new<'a>() -> Self {
         Self {
-            area: Rect::default(),
             button_widget: Button::new("Extract"),
         }
     }
 
-    pub fn area(&mut self, area: Rect) {
-        self.area = area;
-
-        let (export_button_area, _) = self.compute_layout();
-        self.button_widget.set_area(export_button_area);
-    }
-
-    fn compute_layout(&self) -> (Rect, Rect) {
+    fn compute_layout(&self, area: Rect) -> (Rect, Rect) {
         let export_layout = Layout::horizontal([
             Constraint::Length(15),
             Constraint::Max(30),
             Constraint::Min(0),
         ]);
         let [export_button_area, export_progress_area, _] =
-            export_layout.areas(self.area.inner(&Margin::new(2, 1)));
+            export_layout.areas(area.inner(&Margin::new(2, 1)));
         (export_button_area, export_progress_area)
     }
 
     pub fn handle(&mut self, event: &Event) -> Result<()> {
-        self.button_widget.handle(event)?;
-
         match event {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 self.handle_key_event(key_event.clone())?
@@ -80,13 +69,17 @@ impl Widget for Extract<'_> {
             .borders(Borders::ALL)
             .render(area, buf);
 
+        let (export_button_area, _) = self.compute_layout(area);
+
         self.button_widget
             .set_label(if self.button_widget.is_active() {
                 "Cancel"
             } else {
                 "Extract"
             });
-        self.button_widget.render_widget(buf);
+        #[cfg(test)]
+        self.button_widget.set_label(""); // to avoid the label overlapping the instructions
+        self.button_widget.render(export_button_area, buf);
     }
 }
 
