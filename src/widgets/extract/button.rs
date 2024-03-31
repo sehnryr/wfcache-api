@@ -5,26 +5,26 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::widgets::{Widget, WidgetRef};
 
-use crate::widgets::button::Button as ButtonWidget;
+use crate::widgets::button::Button;
 
 const ACTIVE_LABEL: &'static str = "Cancel";
 const INACTIVE_LABEL: &'static str = "Extract";
 
 #[derive(Debug, Clone)]
-pub struct Button<'a> {
-    button_widget: ButtonWidget<'a>,
+pub struct ExtractButton<'a> {
+    button_widget: Button<'a>,
 }
 
-impl Button<'_> {
+impl ExtractButton<'_> {
     pub fn new<'a>() -> Self {
         #[cfg(not(test))]
         // to avoid the label overlapping the instructions
         return Self {
-            button_widget: ButtonWidget::new(INACTIVE_LABEL),
+            button_widget: Button::new(INACTIVE_LABEL),
         };
         #[cfg(test)]
         return Self {
-            button_widget: ButtonWidget::new(""),
+            button_widget: Button::new(""),
         };
     }
 
@@ -57,7 +57,7 @@ impl Button<'_> {
     }
 }
 
-impl WidgetRef for Button<'_> {
+impl WidgetRef for ExtractButton<'_> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         self.button_widget.render(area, buf);
     }
