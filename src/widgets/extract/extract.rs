@@ -8,17 +8,17 @@ use ratatui::text::Line;
 use ratatui::widgets::block::{Position, Title};
 use ratatui::widgets::{Block, Borders, Widget, WidgetRef};
 
-use super::button::Button;
+use super::button::ExtractButton;
 
 #[derive(Debug, Clone)]
 pub struct Extract<'a> {
-    button_widget: Button<'a>,
+    button_widget: ExtractButton<'a>,
 }
 
 impl Extract<'_> {
     pub fn new<'a>() -> Self {
         Self {
-            button_widget: Button::new(),
+            button_widget: ExtractButton::new(),
         }
     }
 
