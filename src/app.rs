@@ -8,7 +8,7 @@ use lotus_lib::package::PackageCollection;
 use lotus_lib::package::PackageTrioType;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::widgets::{Widget, WidgetRef};
+use ratatui::widgets::Widget;
 use ratatui::Frame;
 use ratatui_explorer::{FileExplorer, Theme};
 
@@ -176,7 +176,7 @@ impl Widget for &App<'_> {
 
         self.explorer_widget.widget().render(explorer_area, buf);
         self.info_widget.render(info_area, buf);
-        self.extract_widget.render_ref(extract_area, buf);
+        self.extract_widget.render(extract_area, buf);
     }
 }
 
