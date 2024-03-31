@@ -5,17 +5,17 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::widgets::{Widget, WidgetRef};
 
-use crate::widgets::button::Button;
+use crate::widgets::button::Button as ButtonWidget;
 
 #[derive(Debug, Clone)]
-pub struct ExtractButton<'a> {
-    button_widget: Button<'a>,
+pub struct Button<'a> {
+    button_widget: ButtonWidget<'a>,
 }
 
-impl ExtractButton<'_> {
+impl Button<'_> {
     pub fn new<'a>() -> Self {
         Self {
-            button_widget: Button::new("")
+            button_widget: ButtonWidget::new("")
                 .active_label("Cancel")
                 .inactive_label("Extract"),
         }
@@ -44,7 +44,7 @@ impl ExtractButton<'_> {
     }
 }
 
-impl WidgetRef for ExtractButton<'_> {
+impl WidgetRef for Button<'_> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         self.button_widget.render(area, buf);
     }
