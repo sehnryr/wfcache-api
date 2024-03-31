@@ -25,30 +25,44 @@ impl Default for ButtonTheme {
 
 #[derive(Debug, Clone)]
 pub struct Button<'a> {
-    label: &'a str,
+    default_label: &'a str,
+    active_label: Option<&'a str>,
+    inactive_label: Option<&'a str>,
     theme: ButtonTheme,
     active: bool,
 }
 
 impl<'a> Button<'a> {
-    pub fn new(label: &'a str) -> Self {
+    pub fn new(default_label: &'a str) -> Self {
         Self {
-            label,
+            default_label,
+            active_label: None,
+            inactive_label: None,
             theme: ButtonTheme::default(),
             active: false,
         }
     }
 
-    pub fn set_label(&mut self, label: &'a str) {
-        self.label = label;
+    pub fn active_label(mut self, label: &'a str) -> Self {
+        self.active_label = Some(label);
+        self
     }
 
-    pub fn is_active(&self) -> bool {
-        self.active
+    pub fn inactive_label(mut self, label: &'a str) -> Self {
+        self.inactive_label = Some(label);
+        self
     }
 
     pub fn toggle(&mut self) {
         self.active = !self.active;
+    }
+
+    fn label(&self) -> &str {
+        if self.active {
+            self.active_label.unwrap_or(self.default_label)
+        } else {
+            self.inactive_label.unwrap_or(self.default_label)
+        }
     }
 }
 
@@ -87,7 +101,7 @@ impl WidgetRef for Button<'_> {
             );
         }
         // render label centered
-        let label = Line::from(self.label);
+        let label = Line::from(self.label());
         buf.set_line(
             area.x + (area.width.saturating_sub(label.width() as u16)) / 2,
             area.y + (area.height.saturating_sub(1)) / 2,
