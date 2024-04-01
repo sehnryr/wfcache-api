@@ -167,9 +167,14 @@ impl WidgetRef for Explorer<'_> {
 
         let mut block = Block::default().borders(Borders::ALL);
 
-        // for title_top in self.theme().title_top(self) {
-        //     block = block.title_top(title_top)
-        // }
+        let current_directory_name = format!(
+            "/{}",
+            self.cwd()
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("")
+        );
+        block = block.title_top(current_directory_name);
 
         list = list.block(block);
 
