@@ -24,14 +24,14 @@ impl Extract<'_> {
     }
 
     fn compute_layout(&self, area: Rect) -> (Rect, Rect) {
-        let export_layout = Layout::horizontal([
+        let extract_layout = Layout::horizontal([
             Constraint::Length(15),
             Constraint::Max(30),
             Constraint::Min(0),
         ]);
-        let [export_button_area, export_progress_area, _] =
-            export_layout.areas(area.inner(&Margin::new(2, 1)));
-        (export_button_area, export_progress_area)
+        let [extract_button_area, extract_progress_area, _] =
+            extract_layout.areas(area.inner(&Margin::new(2, 1)));
+        (extract_button_area, extract_progress_area)
     }
 
     pub fn handle<I: Into<KeyInput>>(&mut self, input: I) -> Result<()> {
@@ -57,9 +57,9 @@ impl WidgetRef for Extract<'_> {
             .borders(Borders::ALL)
             .render(area, buf);
 
-        let (export_button_area, _) = self.compute_layout(area);
+        let (extract_button_area, _) = self.compute_layout(area);
 
-        self.button_widget.render(export_button_area, buf);
+        self.button_widget.render(extract_button_area, buf);
     }
 }
 
