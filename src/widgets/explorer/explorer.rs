@@ -152,7 +152,15 @@ impl WidgetRef for Explorer<'_> {
             style.highlight()
         };
 
-        let mut list = List::new(self.files().iter().map(|file| file.text(self.cwd())))
+        let nodes_text = self.files().iter().enumerate().map(|(index, node)| {
+            if index == 0 && self.cwd().parent().is_some() {
+                Span::styled("../", NodeStyle::Directory).into()
+            } else {
+                node.text()
+            }
+        });
+
+        let mut list = List::new(nodes_text)
             .style(Style::default())
             .highlight_spacing(HighlightSpacing::Always)
             .highlight_style(highlight_style);
@@ -201,23 +209,14 @@ impl From<NodeStyle> for Style {
 }
 
 trait NodeExt {
-    fn text(&self, cwd: &PathBuf) -> Text<'_>;
+    fn text(&self) -> Text<'_>;
 }
 
 impl NodeExt for Node {
     #[inline]
-    fn text(&self, cwd: &PathBuf) -> Text<'_> {
+    fn text(&self) -> Text<'_> {
         let mut name = self.name();
-        let root_path = PathBuf::from("");
-        let parent_name = cwd
-            .parent()
-            .unwrap_or(&root_path)
-            .file_name()
-            .and_then(|name| name.to_str())
-            .unwrap_or("");
-        if name.as_str() == parent_name {
-            name = "..".to_string();
-        } else if self.kind() == NodeKind::Directory {
+        if self.kind() == NodeKind::Directory {
             name.push('/');
         }
         let style: NodeStyle = self.kind().into();
