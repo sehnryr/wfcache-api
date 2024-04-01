@@ -8,15 +8,15 @@ use super::theme::Theme;
 use super::widget::Renderer;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct FileExplorer {
+pub struct Explorer {
     cwd: PathBuf,
     files: Vec<File>,
     selected: usize,
     theme: Theme,
 }
 
-impl FileExplorer {
-    pub fn new() -> Result<FileExplorer> {
+impl Explorer {
+    pub fn new() -> Result<Explorer> {
         let cwd = std::env::current_dir()?;
 
         let mut file_explorer = Self {

@@ -4,9 +4,9 @@ use ratatui::style::{Color, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, HighlightSpacing};
 
-use super::explorer::FileExplorer;
+use super::explorer::Explorer;
 
-type LineFactory = Arc<dyn Fn(&FileExplorer) -> Line<'static>>;
+type LineFactory = Arc<dyn Fn(&Explorer) -> Line<'static>>;
 
 #[derive(Clone, derivative::Derivative)]
 #[derivative(Debug, PartialEq, Eq, Hash)]
@@ -35,7 +35,7 @@ impl Theme {
     }
 
     #[inline]
-    pub fn title_top(&self, file_explorer: &FileExplorer) -> Vec<Line> {
+    pub fn title_top(&self, file_explorer: &Explorer) -> Vec<Line> {
         self.title_top
             .iter()
             .map(|title_top| title_top(file_explorer))
