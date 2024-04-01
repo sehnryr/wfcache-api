@@ -7,12 +7,11 @@ use lotus_lib::cache_pair::CachePairReader;
 use lotus_lib::toc::{DirectoryNode, Node, NodeKind};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
+use ratatui::style::{Color, Style};
 use ratatui::text::{Span, Text};
-use ratatui::widgets::{List, ListState, WidgetRef};
+use ratatui::widgets::{Block, Borders, HighlightSpacing, List, ListState, WidgetRef};
 
 use crate::input::KeyInput;
-
-use super::theme::Theme;
 
 #[derive(Clone, Derivative)]
 #[derivative(Debug, PartialEq, Eq, Hash)]
@@ -23,7 +22,6 @@ pub struct Explorer<'a> {
     #[derivative(PartialEq = "ignore", Hash = "ignore")]
     nodes: Vec<Node>,
     selected: usize,
-    theme: Theme,
 }
 
 impl<'a> Explorer<'a> {
@@ -33,7 +31,6 @@ impl<'a> Explorer<'a> {
             h_cache,
             nodes: vec![],
             selected: 0,
-            theme: Theme::default(),
         };
 
         file_explorer.get_and_set_files()?;
@@ -99,11 +96,6 @@ impl<'a> Explorer<'a> {
         self.selected
     }
 
-    #[inline]
-    pub const fn theme(&self) -> &Theme {
-        &self.theme
-    }
-
     fn get_and_set_files(&mut self) -> Result<()> {
         let current_directory = self
             .h_cache
@@ -155,46 +147,66 @@ impl WidgetRef for Explorer<'_> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         let mut state = ListState::default().with_selected(Some(self.selected_idx()));
 
-        let highlight_style = if self.current().kind() == NodeKind::Directory {
-            self.theme().highlight_dir_style
-        } else {
-            self.theme().highlight_item_style
+        let highlight_style: Style = {
+            let style: NodeStyle = self.current().kind().into();
+            style.highlight()
         };
 
-        let mut list = List::new(
-            self.files()
-                .iter()
-                .map(|file| file.text(self.cwd(), self.theme())),
-        )
-        .style(self.theme().style)
-        .highlight_spacing(self.theme().highlight_spacing.clone())
-        .highlight_style(highlight_style);
+        let mut list = List::new(self.files().iter().map(|file| file.text(self.cwd())))
+            .style(Style::default())
+            .highlight_spacing(HighlightSpacing::Always)
+            .highlight_style(highlight_style);
 
-        if let Some(symbol) = self.theme().highlight_symbol.as_deref() {
-            list = list.highlight_symbol(symbol);
-        }
+        let mut block = Block::default().borders(Borders::ALL);
 
-        if let Some(block) = self.theme().block.as_ref() {
-            let mut block = block.clone();
+        // for title_top in self.theme().title_top(self) {
+        //     block = block.title_top(title_top)
+        // }
 
-            for title_top in self.theme().title_top(self) {
-                block = block.title_top(title_top)
-            }
-
-            list = list.block(block);
-        }
+        list = list.block(block);
 
         ratatui::widgets::StatefulWidgetRef::render_ref(&list, area, buf, &mut state)
     }
 }
 
+enum NodeStyle {
+    Directory,
+    Item,
+}
+
+impl NodeStyle {
+    #[inline]
+    fn highlight(self) -> Style {
+        let style: Style = self.into();
+        style.bg(Color::DarkGray)
+    }
+}
+
+impl Into<NodeStyle> for NodeKind {
+    fn into(self) -> NodeStyle {
+        match self {
+            NodeKind::Directory => NodeStyle::Directory,
+            NodeKind::File => NodeStyle::Item,
+        }
+    }
+}
+
+impl From<NodeStyle> for Style {
+    fn from(style: NodeStyle) -> Self {
+        match style {
+            NodeStyle::Directory => Style::default().fg(Color::LightBlue),
+            NodeStyle::Item => Style::default().fg(Color::White),
+        }
+    }
+}
+
 trait NodeExt {
-    fn text(&self, cwd: &PathBuf, theme: &Theme) -> Text<'_>;
+    fn text(&self, cwd: &PathBuf) -> Text<'_>;
 }
 
 impl NodeExt for Node {
     #[inline]
-    fn text(&self, cwd: &PathBuf, theme: &Theme) -> Text<'_> {
+    fn text(&self, cwd: &PathBuf) -> Text<'_> {
         let mut name = self.name();
         let root_path = PathBuf::from("");
         let parent_name = cwd
@@ -208,11 +220,8 @@ impl NodeExt for Node {
         } else if self.kind() == NodeKind::Directory {
             name.push('/');
         }
-        let style = if self.kind() == NodeKind::Directory {
-            *theme.dir_style()
-        } else {
-            *theme.item_style()
-        };
+        let style: NodeStyle = self.kind().into();
+        let style: Style = style.into();
         Span::styled(name, style).into()
     }
 }
