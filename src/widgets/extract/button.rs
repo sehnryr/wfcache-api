@@ -1,10 +1,10 @@
 use std::io::Result;
 
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::widgets::{Widget, WidgetRef};
 
+use crate::input::KeyInput;
 use crate::widgets::button::Button as ButtonWidget;
 
 #[derive(Debug, Clone)]
@@ -25,21 +25,11 @@ impl Button<'_> {
         self.button_widget.toggle();
     }
 
-    pub fn handle(&mut self, event: &Event) -> Result<()> {
-        match event {
-            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                self.handle_key_event(key_event.clone())?
-            }
+    pub fn handle(&mut self, input: KeyInput) -> Result<()> {
+        match input {
+            KeyInput::Space => self.toggle(),
             _ => {}
         }
-        Ok(())
-    }
-
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<()> {
-        match key_event.code {
-            KeyCode::Char(' ') => self.toggle(),
-            _ => {}
-        };
         Ok(())
     }
 }

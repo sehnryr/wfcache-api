@@ -1,42 +1,11 @@
 use std::{io::Result, path::PathBuf};
 
-use crossterm::event::{Event, KeyCode};
 use ratatui::widgets::WidgetRef;
+
+use crate::input::KeyInput;
 
 use super::theme::Theme;
 use super::widget::Renderer;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Input {
-    Up,
-    Down,
-    Left,
-    Right,
-    None,
-}
-
-impl From<&Event> for Input {
-    fn from(value: &Event) -> Self {
-        if let Event::Key(key) = value {
-            if matches!(
-                key.kind,
-                crossterm::event::KeyEventKind::Press | crossterm::event::KeyEventKind::Repeat
-            ) {
-                let input = match key.code {
-                    KeyCode::Char('j') | KeyCode::Down => Input::Down,
-                    KeyCode::Char('k') | KeyCode::Up => Input::Up,
-                    KeyCode::Char('h') | KeyCode::Left | KeyCode::Backspace => Input::Left,
-                    KeyCode::Char('l') | KeyCode::Right | KeyCode::Enter => Input::Right,
-                    _ => Input::None,
-                };
-
-                return input;
-            }
-        }
-
-        Input::None
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FileExplorer {
@@ -67,25 +36,23 @@ impl FileExplorer {
         Renderer(self)
     }
 
-    pub fn handle<I: Into<Input>>(&mut self, input: I) -> Result<()> {
-        let input = input.into();
-
-        match input {
-            Input::Up => {
+    pub fn handle<I: Into<KeyInput>>(&mut self, input: I) -> Result<()> {
+        match input.into() {
+            KeyInput::Up => {
                 if self.selected == 0 {
                     self.selected = self.files.len() - 1;
                 } else {
                     self.selected -= 1;
                 }
             }
-            Input::Down => {
+            KeyInput::Down => {
                 if self.selected == self.files.len() - 1 {
                     self.selected = 0;
                 } else {
                     self.selected += 1;
                 }
             }
-            Input::Left => {
+            KeyInput::Left => {
                 let parent = self.cwd.parent();
 
                 if let Some(parent) = parent {
@@ -94,14 +61,14 @@ impl FileExplorer {
                     self.selected = 0
                 }
             }
-            Input::Right => {
+            KeyInput::Right => {
                 if self.files[self.selected].path.is_dir() {
                     self.cwd = self.files.swap_remove(self.selected).path;
                     self.get_and_set_files()?;
                     self.selected = 0
                 }
             }
-            Input::None => (),
+            _ => {}
         }
 
         Ok(())
