@@ -136,7 +136,7 @@ impl App<'_> {
         let vertical_layout = Layout::vertical([Constraint::Min(10), Constraint::Length(5)]);
         let [content_area, extract_area] = vertical_layout.areas(area);
 
-        let content_layout = Layout::horizontal([Constraint::Length(30), Constraint::Min(0)]);
+        let content_layout = Layout::horizontal([Constraint::Length(50), Constraint::Min(0)]);
         let [explorer_area, info_area] = content_layout.areas(content_area);
 
         (explorer_area, info_area, extract_area)
