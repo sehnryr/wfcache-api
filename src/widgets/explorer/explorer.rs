@@ -76,26 +76,6 @@ impl<'a> Explorer<'a> {
         Ok(())
     }
 
-    #[inline]
-    pub fn cwd(&self) -> &PathBuf {
-        &self.cwd
-    }
-
-    #[inline]
-    pub fn current(&self) -> &Node {
-        &self.nodes[self.selected]
-    }
-
-    #[inline]
-    pub const fn files(&self) -> &Vec<Node> {
-        &self.nodes
-    }
-
-    #[inline]
-    pub const fn selected_idx(&self) -> usize {
-        self.selected
-    }
-
     fn get_and_set_files(&mut self) -> Result<()> {
         let current_directory = self
             .h_cache
@@ -145,15 +125,15 @@ impl<'a> Explorer<'a> {
 
 impl WidgetRef for Explorer<'_> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
-        let mut state = ListState::default().with_selected(Some(self.selected_idx()));
+        let mut state = ListState::default().with_selected(Some(self.selected));
 
         let highlight_style: Style = {
-            let style: NodeStyle = self.current().kind().into();
+            let style: NodeStyle = self.nodes[self.selected].kind().into();
             style.highlight()
         };
 
-        let nodes_text = self.files().iter().enumerate().map(|(index, node)| {
-            if index == 0 && self.cwd().parent().is_some() {
+        let nodes_text = self.nodes.iter().enumerate().map(|(index, node)| {
+            if index == 0 && self.cwd.parent().is_some() {
                 Span::styled("../", NodeStyle::Directory).into()
             } else {
                 node.text()
@@ -169,7 +149,7 @@ impl WidgetRef for Explorer<'_> {
 
         let current_directory_name = format!(
             "/{}",
-            self.cwd()
+            self.cwd
                 .file_name()
                 .and_then(|name| name.to_str())
                 .unwrap_or("")
