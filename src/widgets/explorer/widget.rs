@@ -3,10 +3,10 @@ use ratatui::layout::Rect;
 use ratatui::text::{Span, Text};
 use ratatui::widgets::{List, ListState, WidgetRef};
 
-use super::explorer::{File, FileExplorer};
+use super::explorer::{Explorer, File};
 use super::theme::Theme;
 
-pub struct Renderer<'a>(pub(crate) &'a FileExplorer);
+pub struct Renderer<'a>(pub(crate) &'a Explorer);
 
 impl WidgetRef for Renderer<'_> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer)
