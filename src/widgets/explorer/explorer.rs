@@ -8,25 +8,14 @@ use super::widget::Renderer;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Input {
-    /// Move the selection up.
     Up,
-    /// Move the selection down.
     Down,
-    /// Go to the parent directory.
     Left,
-    /// Go to the child directory (if the selected item is a directory).
     Right,
-    /// Do nothing (used for converting events from other libraries, like
-    /// [crossterm](https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html),
-    /// [termion](https://docs.rs/termion/latest/termion/event/enum.Event.html) and
-    /// [termwiz](https://docs.rs/termwiz/latest/termwiz/input/enum.InputEvent.html) to [`Input`]).
     None,
 }
 
 impl From<&Event> for Input {
-    /// Convert crossterm [`Event`](https://docs.rs/crossterm/latest/crossterm/event/enum.Event.html) to [`Input`].
-    ///
-    /// **Note:** This implementation is only available when the `crossterm` feature is enabled.
     fn from(value: &Event) -> Self {
         if let Event::Key(key) = value {
             if matches!(
@@ -69,15 +58,6 @@ impl FileExplorer {
         };
 
         file_explorer.get_and_set_files()?;
-
-        Ok(file_explorer)
-    }
-
-    #[inline]
-    pub fn with_theme(theme: Theme) -> Result<FileExplorer> {
-        let mut file_explorer = Self::new()?;
-
-        file_explorer.theme = theme;
 
         Ok(file_explorer)
     }
@@ -128,33 +108,8 @@ impl FileExplorer {
     }
 
     #[inline]
-    pub fn set_cwd<P: Into<PathBuf>>(&mut self, cwd: P) -> Result<()> {
-        self.cwd = cwd.into();
-        self.get_and_set_files()?;
-        self.selected = 0;
-
-        Ok(())
-    }
-
-    #[inline]
-    pub fn set_theme(&mut self, theme: Theme) {
-        self.theme = theme;
-    }
-
-    #[inline]
-    pub fn set_selected_idx(&mut self, selected: usize) {
-        assert!(selected < self.files.len());
-        self.selected = selected;
-    }
-
-    #[inline]
     pub fn current(&self) -> &File {
         &self.files[self.selected]
-    }
-
-    #[inline]
-    pub const fn cwd(&self) -> &PathBuf {
-        &self.cwd
     }
 
     #[inline]
@@ -229,11 +184,6 @@ impl File {
     #[inline]
     pub fn name(&self) -> &str {
         &self.name
-    }
-
-    #[inline]
-    pub const fn path(&self) -> &PathBuf {
-        &self.path
     }
 
     #[inline]
