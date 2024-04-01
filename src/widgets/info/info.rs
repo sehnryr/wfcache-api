@@ -1,3 +1,4 @@
+use std::io::{Error, ErrorKind, Result};
 use std::rc::Rc;
 
 use derivative::Derivative;
@@ -5,64 +6,156 @@ use lotus_lib::cache_pair::CachePairReader;
 use lotus_lib::toc::{FileNode, Node, NodeKind};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
-use ratatui::text::Line;
-use ratatui::widgets::{Block, Borders, Padding, Paragraph, Widget, WidgetRef};
+use ratatui::style::{Color, Style, Stylize};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Block, Borders, Padding, Paragraph, Widget, WidgetRef, Wrap};
 
-#[derive(Clone, Derivative)]
+#[derive(Derivative)]
 #[derivative(Debug)]
 pub struct Info<'a> {
     #[derivative(Debug = "ignore")]
-    h_cache: Rc<&'a CachePairReader>,
-    node: Option<Node>,
+    f_cache: Option<Rc<&'a CachePairReader>>,
+    #[derivative(Debug = "ignore")]
+    b_cache: Option<Rc<&'a CachePairReader>>,
+
+    h_node: Node,
+    f_node: Option<Node>,
+    b_node: Option<Node>,
 }
 
 impl<'a> Info<'a> {
-    pub fn new(h_cache: Rc<&'a CachePairReader>) -> Self {
-        Self {
-            h_cache,
-            node: None,
-        }
+    pub fn new(
+        h_cache: Rc<&'a CachePairReader>,
+        f_cache: Option<Rc<&'a CachePairReader>>,
+        b_cache: Option<Rc<&'a CachePairReader>>,
+    ) -> Result<Self> {
+        let h_node = h_cache
+            .clone()
+            .get_directory_node("/")
+            .ok_or(Error::new(ErrorKind::NotFound, "Node not found"))?;
+
+        Ok(Self {
+            f_cache,
+            b_cache,
+            h_node,
+            f_node: None,
+            b_node: None,
+        })
     }
 
-    pub fn set_node(&mut self, node: &Node) {
-        self.node = Some(node.clone());
+    pub fn set_node(&mut self, node: &Node) -> Result<()> {
+        let node_path = node.path();
+        if self.h_node.path() == node_path {
+            return Ok(());
+        }
+
+        self.h_node = node.clone();
+
+        if node.kind() == NodeKind::File {
+            self.f_node = self
+                .f_cache
+                .as_ref()
+                .and_then(|cache| cache.get_file_node(&node_path));
+            self.b_node = self
+                .b_cache
+                .as_ref()
+                .and_then(|cache| cache.get_file_node(&node_path));
+        } else {
+            self.f_node = None;
+            self.b_node = None;
+        }
+
+        Ok(())
     }
 }
 
 impl WidgetRef for Info<'_> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
-        let content = if let Some(node) = &self.node {
-            let node_name = format!("Name: {}", node.name());
-            let node_path = format!("Path: {}", node.path().to_string_lossy());
-            let mut content = vec![
-                Line::from(vec![node_name.into()]),
-                Line::from(vec![node_path.into()]),
-            ];
+        let node_name = format!("Name: {}", self.h_node.name());
+        let node_path = format!("Path: {}", self.h_node.path().to_string_lossy());
+        let mut content = vec![
+            Line::from(vec![node_name.into()]),
+            Line::from(vec![node_path.into()]),
+        ];
 
-            if node.kind() == NodeKind::File {
-                let node_cache_offset = format!("Cache offset: {}", node.cache_offset());
-                let node_timestamp = format!("Timestamp: {}", node.timestamp());
-                let node_compressed_length = format!("Compressed length: {}", node.comp_len());
-                let node_length = format!("Length: {}", node.len());
+        let cache_style = Style::new().fg(Color::LightBlue).underlined();
 
-                content.extend(vec![
-                    Line::from(vec![node_cache_offset.into()]),
-                    Line::from(vec![node_timestamp.into()]),
-                    Line::from(vec![node_compressed_length.into()]),
-                    Line::from(vec![node_length.into()]),
-                ]);
-            }
+        if self.h_node.kind() == NodeKind::File {
+            content.extend(vec![
+                Line::from(""),
+                Line::from(Span::styled("H Cache      ", cache_style)),
+            ]);
+            content.extend(cache_info(&self.h_node));
+        }
 
-            content
-        } else {
-            Vec::new()
-        };
+        if let Some(f_node) = &self.f_node {
+            content.extend(vec![
+                Line::from(""),
+                Line::from(Span::styled("F Cache      ", cache_style)),
+            ]);
+            content.extend(cache_info(f_node));
+        }
+
+        if let Some(b_node) = &self.b_node {
+            content.extend(vec![
+                Line::from(""),
+                Line::from(Span::styled("B Cache      ", cache_style)),
+            ]);
+            content.extend(cache_info(b_node));
+        }
 
         let block = Block::default()
             .title(" Info ")
             .borders(Borders::ALL)
             .padding(Padding::horizontal(1));
 
-        Paragraph::new(content).block(block).render(area, buf);
+        Paragraph::new(content)
+            .block(block)
+            .wrap(Wrap { trim: true })
+            .render(area, buf);
+    }
+}
+
+#[inline]
+fn cache_info(node: &Node) -> Vec<Line> {
+    let cache_offset = format!("Cache offset: {}", node.cache_offset());
+    let timestamp = format!("Timestamp:    {}", node.timestamp());
+    let compressed_length = if node.comp_len() < 1000 {
+        format!("Comp Length:  {} B", node.comp_len())
+    } else {
+        format!(
+            "Comp Length:  {} B ({})",
+            node.comp_len(),
+            show_bytes(node.comp_len())
+        )
+    };
+    let length = if node.len() < 1000 {
+        format!("Length:       {} B", node.len())
+    } else {
+        format!(
+            "Length:       {} B ({})",
+            node.len(),
+            show_bytes(node.len())
+        )
+    };
+
+    vec![
+        Line::from(cache_offset),
+        Line::from(timestamp),
+        Line::from(compressed_length),
+        Line::from(length),
+    ]
+}
+
+#[inline]
+fn show_bytes(bytes: i32) -> String {
+    if bytes < 1000 {
+        format!("{} B", bytes)
+    } else if bytes < 1000_000 {
+        format!("{:.2} KB", bytes as f64 / 1000.0)
+    } else if bytes < 1000_000_000 {
+        format!("{:.2} MB", bytes as f64 / 1000_000.0)
+    } else {
+        format!("{:.2} GB", bytes as f64 / 1000_000_000.0)
     }
 }

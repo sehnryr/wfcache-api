@@ -56,7 +56,8 @@ impl<'a> App<'a> {
 
         let explorer_widget =
             widgets::Explorer::new(h_cache.clone()).wrap_err("Explorer widget failed")?;
-        let info_widget = widgets::Info::new(h_cache.clone());
+        let info_widget = widgets::Info::new(h_cache.clone(), f_cache.clone(), b_cache.clone())
+            .wrap_err("Info widget failed")?;
         let extract_widget = widgets::Extract::new();
 
         Ok(App {
@@ -134,7 +135,7 @@ impl App<'_> {
             KeyInput::Quit => self.exit(),
             KeyInput::Down | KeyInput::Up | KeyInput::Right | KeyInput::Left => {
                 // Update the info widget with the current node only on navigation
-                self.info_widget.set_node(self.explorer_widget.current());
+                self.info_widget.set_node(self.explorer_widget.current())?;
             }
             _ => {}
         }
