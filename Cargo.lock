@@ -856,15 +856,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ratatui-explorer"
-version = "0.1.1"
-dependencies = [
- "crossterm",
- "derivative",
- "ratatui",
-]
-
-[[package]]
 name = "rctree"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1296,7 +1287,6 @@ dependencies = [
  "lscolors",
  "rand",
  "ratatui",
- "ratatui-explorer",
  "relative-path",
  "rustyline",
  "serde_json",

@@ -31,7 +31,6 @@ lotus-utils-texture = "0.1.0"
 lscolors = { version = "0.17.0", features = ["ansi_term"] }
 rand = "0.8.5"
 ratatui = { version = "0.26.1", features = ["unstable-widget-ref"] }
-ratatui-explorer = { path = "../ratatui-explorer" }
 relative-path = "1.9.2"
 rustyline = "10.1.1"
 serde_json = "1.0.113"
