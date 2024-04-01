@@ -1,12 +1,13 @@
 use std::io::Result;
 
-use crossterm::event::Event;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Constraint, Layout, Margin, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::Line;
 use ratatui::widgets::block::{Position, Title};
 use ratatui::widgets::{Block, Borders, Widget, WidgetRef};
+
+use crate::input::KeyInput;
 
 use super::Button;
 
@@ -33,8 +34,8 @@ impl Extract<'_> {
         (export_button_area, export_progress_area)
     }
 
-    pub fn handle(&mut self, event: &Event) -> Result<()> {
-        self.button_widget.handle(event)?;
+    pub fn handle<I: Into<KeyInput>>(&mut self, input: I) -> Result<()> {
+        self.button_widget.handle(input.into())?;
         Ok(())
     }
 }

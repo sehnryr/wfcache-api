@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use color_eyre::eyre::ContextCompat;
 use color_eyre::{eyre::Context, Result};
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event;
 use lotus_lib::cache_pair::{CachePair, CachePairReader};
 use lotus_lib::package::PackageCollection;
 use lotus_lib::package::PackageTrioType;
@@ -11,6 +11,7 @@ use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::widgets::Widget;
 use ratatui::Frame;
 
+use crate::input::KeyInput;
 use crate::tui;
 use crate::widgets;
 
@@ -133,23 +134,16 @@ impl App<'_> {
             .wrap_err("extract widget handle failed")?;
 
         // handle application events
-        match event {
-            // it's important to check that the event is a key press event as
-            // crossterm also emits key release and repeat events on Windows.
-            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => self
-                .handle_key_event(key_event)
-                .wrap_err_with(|| format!("handling key event failed:\n{key_event:#?}")),
-            _ => Ok(()),
-        }
+        self.handle_key_input(&event).wrap_err("app handle failed")
     }
 
     fn exit(&mut self) {
         self.exit = true;
     }
 
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<()> {
-        match key_event.code {
-            KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => self.exit(),
+    fn handle_key_input<I: Into<KeyInput>>(&mut self, input: I) -> Result<()> {
+        match input.into() {
+            KeyInput::Quit => self.exit(),
             _ => {}
         }
         Ok(())

@@ -1,6 +1,7 @@
 mod app;
 mod args;
 mod errors;
+mod input;
 mod tui;
 mod widgets;
 
