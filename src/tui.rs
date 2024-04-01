@@ -1,25 +1,25 @@
-use std::io::{self, stdout, Stdout};
+use std::io::{stdout, Result, Stdout};
 
-use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+use crossterm::execute;
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
-use ratatui::prelude::*;
+use ratatui::backend::CrosstermBackend;
+use ratatui::Terminal;
 
 /// A type alias for the terminal type used in this application
 pub type Tui = Terminal<CrosstermBackend<Stdout>>;
 
 /// Initialize the terminal
-pub fn init() -> io::Result<Tui> {
-    execute!(stdout(), EnterAlternateScreen, EnableMouseCapture)?;
+pub fn init() -> Result<Tui> {
+    execute!(stdout(), EnterAlternateScreen)?;
     enable_raw_mode()?;
     Terminal::new(CrosstermBackend::new(stdout()))
 }
 
 /// Restore the terminal to its original state
-pub fn restore() -> io::Result<()> {
-    execute!(stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
+pub fn restore() -> Result<()> {
+    execute!(stdout(), LeaveAlternateScreen)?;
     disable_raw_mode()?;
     Ok(())
 }
