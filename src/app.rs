@@ -1,10 +1,11 @@
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use color_eyre::eyre::ContextCompat;
 use color_eyre::{eyre::Context, Result};
 use crossterm::event;
 use lotus_lib::cache_pair::{CachePair, CachePairReader};
-use lotus_lib::package::PackageCollection;
+use lotus_lib::package::Package;
 use lotus_lib::package::PackageTrioType;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
@@ -18,27 +19,21 @@ use crate::widgets;
 pub struct App<'a> {
     exit: bool,
     output_directory: PathBuf,
-    package_name: String,
-    package_collection: PackageCollection<CachePairReader>,
-    current_lotus_dir: PathBuf,
-    selected_lotus_node: usize,
-    explorer_widget: widgets::Explorer,
+
+    h_cache: Rc<&'a CachePairReader>,
+    f_cache: Option<Rc<&'a CachePairReader>>,
+    b_cache: Option<Rc<&'a CachePairReader>>,
+
+    explorer_widget: widgets::Explorer<'a>,
     info_widget: widgets::Info,
     extract_widget: widgets::Extract<'a>,
 }
 
-impl App<'_> {
-    pub fn try_init<'a>(
-        cache_windows_directory: PathBuf,
-        package_name: String,
+impl<'a> App<'a> {
+    pub fn try_init(
+        package: &'a Package<CachePairReader>,
         output_directory: PathBuf,
     ) -> Result<App<'a>> {
-        let package_collection =
-            PackageCollection::<CachePairReader>::new(cache_windows_directory.clone(), true);
-        let package = package_collection
-            .get_package(&package_name)
-            .wrap_err_with(|| format!("Package {} not found", package_name))?;
-
         let h_cache = package
             .get(&PackageTrioType::H)
             .wrap_err("H cache not found")?;
@@ -55,14 +50,17 @@ impl App<'_> {
             Some(cache)
         });
 
+        let h_cache = Rc::new(h_cache);
+        let f_cache = f_cache.map(|cache| Rc::new(cache));
+        let b_cache = b_cache.map(|cache| Rc::new(cache));
+
         Ok(App {
             exit: false,
             output_directory,
-            package_name,
-            package_collection,
-            current_lotus_dir: PathBuf::from("/"),
-            selected_lotus_node: 0,
-            explorer_widget: widgets::Explorer::new().wrap_err("Explorer widget failed")?,
+            h_cache: h_cache.clone(),
+            f_cache,
+            b_cache,
+            explorer_widget: widgets::Explorer::new(h_cache).wrap_err("Explorer widget failed")?,
             info_widget: widgets::Info::new(),
             extract_widget: widgets::Extract::new(),
         })
@@ -72,31 +70,16 @@ impl App<'_> {
         &self.output_directory
     }
 
-    fn get_cache(&self, package_type: &PackageTrioType) -> Option<&CachePairReader> {
-        self.package_collection
-            .get_package(&self.package_name)
-            .unwrap()
-            .get(package_type)
+    pub fn h_cache(&self) -> Rc<&CachePairReader> {
+        self.h_cache.clone()
     }
 
-    pub fn h_cache(&self) -> &CachePairReader {
-        self.get_cache(&PackageTrioType::H).unwrap()
+    pub fn f_cache(&self) -> Option<Rc<&CachePairReader>> {
+        self.f_cache.clone()
     }
 
-    pub fn f_cache(&self) -> Option<&CachePairReader> {
-        self.get_cache(&PackageTrioType::F)
-    }
-
-    pub fn b_cache(&self) -> Option<&CachePairReader> {
-        self.get_cache(&PackageTrioType::B)
-    }
-
-    pub fn current_lotus_dir(&self) -> &PathBuf {
-        &self.current_lotus_dir
-    }
-
-    pub fn selected_lotus_node(&self) -> usize {
-        self.selected_lotus_node
+    pub fn b_cache(&self) -> Option<Rc<&CachePairReader>> {
+        self.b_cache.clone()
     }
 }
 
@@ -172,6 +155,8 @@ impl Widget for &App<'_> {
 
 #[cfg(test)]
 mod test {
+    use lotus_lib::package::PackageCollection;
+
     use super::*;
 
     const HOME_DIR: &str = env!("HOME"); // TODO: Windows support
@@ -191,16 +176,10 @@ mod test {
         let package_name = PACKAGE_NAME.to_string();
         let output_directory = PathBuf::from(HOME_DIR).join(OUTPUT_DIRECTORY);
 
-        App::try_init(cache_windows_directory, package_name, output_directory).unwrap();
-    }
+        let collection = PackageCollection::<CachePairReader>::new(cache_windows_directory, true);
+        let package = collection.get_package(&package_name).unwrap();
 
-    #[test]
-    fn test_init_package_toc_read() {
-        let cache_windows_directory = PathBuf::from(HOME_DIR).join(CACHE_WINDOWS_DIRECTORY);
-        let package_name = PACKAGE_NAME.to_string();
-        let output_directory = PathBuf::from(HOME_DIR).join(OUTPUT_DIRECTORY);
-
-        let app = App::try_init(cache_windows_directory, package_name, output_directory).unwrap();
+        let app = App::try_init(package, output_directory).unwrap();
 
         // Misc package has H, F, and B caches
         assert!(!app.h_cache().files().is_empty());
