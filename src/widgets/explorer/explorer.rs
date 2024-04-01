@@ -76,6 +76,11 @@ impl<'a> Explorer<'a> {
         Ok(())
     }
 
+    #[inline]
+    pub fn current(&self) -> &Node {
+        &self.nodes[self.selected]
+    }
+
     fn get_and_set_files(&mut self) -> Result<()> {
         let current_directory = self
             .h_cache
@@ -128,7 +133,7 @@ impl WidgetRef for Explorer<'_> {
         let mut state = ListState::default().with_selected(Some(self.selected));
 
         let highlight_style: Style = {
-            let style: NodeStyle = self.nodes[self.selected].kind().into();
+            let style: NodeStyle = self.current().kind().into();
             style.highlight()
         };
 
