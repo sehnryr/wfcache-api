@@ -147,7 +147,7 @@ impl Widget for &App<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let (explorer_area, info_area, extract_area) = self.compute_layout(area);
 
-        self.explorer_widget.widget().render(explorer_area, buf);
+        self.explorer_widget.render(explorer_area, buf);
         self.info_widget.render(info_area, buf);
         self.extract_widget.render(extract_area, buf);
     }
