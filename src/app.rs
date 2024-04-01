@@ -10,7 +10,6 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::widgets::Widget;
 use ratatui::Frame;
-use ratatui_explorer::{FileExplorer, Theme};
 
 use crate::tui;
 use crate::widgets;
@@ -22,7 +21,7 @@ pub struct App<'a> {
     package_collection: PackageCollection<CachePairReader>,
     current_lotus_dir: PathBuf,
     selected_lotus_node: usize,
-    explorer_widget: FileExplorer,
+    explorer_widget: widgets::Explorer,
     info_widget: widgets::Info,
     extract_widget: widgets::Extract<'a>,
 }
@@ -55,9 +54,6 @@ impl App<'_> {
             Some(cache)
         });
 
-        let theme = Theme::default().add_default_title();
-        let file_explorer = FileExplorer::with_theme(theme).wrap_err("File explorer failed")?;
-
         Ok(App {
             exit: false,
             output_directory,
@@ -65,7 +61,7 @@ impl App<'_> {
             package_collection,
             current_lotus_dir: PathBuf::from("/"),
             selected_lotus_node: 0,
-            explorer_widget: file_explorer,
+            explorer_widget: widgets::Explorer::new().wrap_err("Explorer widget failed")?,
             info_widget: widgets::Info::new(),
             extract_widget: widgets::Extract::new(),
         })
