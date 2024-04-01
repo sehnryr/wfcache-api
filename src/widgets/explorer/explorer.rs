@@ -1,5 +1,10 @@
-use std::{io::Result, path::PathBuf};
+use std::io::{Error, ErrorKind, Result};
+use std::path::PathBuf;
+use std::rc::Rc;
 
+use derivative::Derivative;
+use lotus_lib::cache_pair::CachePairReader;
+use lotus_lib::toc::{DirectoryNode, Node, NodeKind};
 use ratatui::widgets::WidgetRef;
 
 use crate::input::KeyInput;
@@ -7,21 +12,24 @@ use crate::input::KeyInput;
 use super::theme::Theme;
 use super::widget::Renderer;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Explorer {
+#[derive(Clone, Derivative)]
+#[derivative(Debug, PartialEq, Eq, Hash)]
+pub struct Explorer<'a> {
     cwd: PathBuf,
-    files: Vec<File>,
+    #[derivative(Debug = "ignore", PartialEq = "ignore", Hash = "ignore")]
+    h_cache: Rc<&'a CachePairReader>,
+    #[derivative(PartialEq = "ignore", Hash = "ignore")]
+    nodes: Vec<Node>,
     selected: usize,
     theme: Theme,
 }
 
-impl Explorer {
-    pub fn new() -> Result<Explorer> {
-        let cwd = std::env::current_dir()?;
-
+impl<'a> Explorer<'a> {
+    pub fn new(h_cache: Rc<&'a CachePairReader>) -> Result<Explorer<'a>> {
         let mut file_explorer = Self {
-            cwd,
-            files: vec![],
+            cwd: PathBuf::from("/"),
+            h_cache,
+            nodes: vec![],
             selected: 0,
             theme: Theme::default(),
         };
@@ -40,13 +48,13 @@ impl Explorer {
         match input.into() {
             KeyInput::Up => {
                 if self.selected == 0 {
-                    self.selected = self.files.len() - 1;
+                    self.selected = self.nodes.len() - 1;
                 } else {
                     self.selected -= 1;
                 }
             }
             KeyInput::Down => {
-                if self.selected == self.files.len() - 1 {
+                if self.selected == self.nodes.len() - 1 {
                     self.selected = 0;
                 } else {
                     self.selected += 1;
@@ -62,8 +70,8 @@ impl Explorer {
                 }
             }
             KeyInput::Right => {
-                if self.files[self.selected].path.is_dir() {
-                    self.cwd = self.files.swap_remove(self.selected).path;
+                if self.nodes[self.selected].kind() == NodeKind::Directory {
+                    self.cwd = self.nodes.swap_remove(self.selected).path();
                     self.get_and_set_files()?;
                     self.selected = 0
                 }
@@ -75,13 +83,18 @@ impl Explorer {
     }
 
     #[inline]
-    pub fn current(&self) -> &File {
-        &self.files[self.selected]
+    pub fn cwd(&self) -> &PathBuf {
+        &self.cwd
     }
 
     #[inline]
-    pub const fn files(&self) -> &Vec<File> {
-        &self.files
+    pub fn current(&self) -> &Node {
+        &self.nodes[self.selected]
+    }
+
+    #[inline]
+    pub const fn files(&self) -> &Vec<Node> {
+        &self.nodes
     }
 
     #[inline]
@@ -95,66 +108,48 @@ impl Explorer {
     }
 
     fn get_and_set_files(&mut self) -> Result<()> {
-        let (mut dirs, mut none_dirs): (Vec<_>, Vec<_>) = std::fs::read_dir(&self.cwd)?
-            .filter_map(|entry| {
-                entry.ok().map(|e| {
-                    let path = e.path();
-                    let is_dir = path.is_dir();
-                    let name = if is_dir {
-                        format!("{}/", e.file_name().to_string_lossy())
-                    } else {
-                        e.file_name().to_string_lossy().into_owned()
-                    };
+        let current_directory = self
+            .h_cache
+            .get_directory_node(&self.cwd)
+            .ok_or(Error::new(ErrorKind::NotFound, "Directory not found"))?;
 
-                    File { name, path, is_dir }
-                })
-            })
-            .partition(|file| file.is_dir);
+        let mut directories = Vec::new();
+        let mut files = Vec::new();
 
-        dirs.sort_unstable_by(|f1, f2| f1.name.cmp(&f2.name));
-        none_dirs.sort_unstable_by(|f1, f2| f1.name.cmp(&f2.name));
+        current_directory.children().iter().for_each(|node| {
+            if node.kind() == NodeKind::Directory {
+                directories.push(node.clone());
+            } else {
+                files.push(node.clone());
+            }
+        });
 
-        if let Some(parent) = self.cwd.parent() {
-            let mut files = Vec::with_capacity(1 + dirs.len() + none_dirs.len());
+        directories.sort_by(|a, b| a.name().cmp(&b.name()));
+        files.sort_by(|a, b| a.name().cmp(&b.name()));
 
-            files.push(File {
-                name: "../".to_owned(),
-                path: parent.to_path_buf(),
-                is_dir: true,
-            });
+        if let Some(_parent) = self.cwd.parent() {
+            let mut nodes = Vec::with_capacity(1 + directories.len() + files.len());
 
-            files.extend(dirs);
-            files.extend(none_dirs);
+            let parent_node = current_directory.parent().ok_or(Error::new(
+                ErrorKind::NotFound,
+                "Parent directory not found",
+            ))?;
 
-            self.files = files
+            nodes.push(parent_node);
+
+            nodes.extend(directories);
+            nodes.extend(files);
+
+            self.nodes = nodes;
         } else {
-            let mut files = Vec::with_capacity(dirs.len() + none_dirs.len());
+            let mut nodes = Vec::with_capacity(directories.len() + files.len());
 
-            files.extend(dirs);
-            files.extend(none_dirs);
+            nodes.extend(directories);
+            nodes.extend(files);
 
-            self.files = files;
-        };
+            self.nodes = nodes;
+        }
 
         Ok(())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct File {
-    name: String,
-    path: PathBuf,
-    is_dir: bool,
-}
-
-impl File {
-    #[inline]
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    #[inline]
-    pub const fn is_dir(&self) -> bool {
-        self.is_dir
     }
 }
