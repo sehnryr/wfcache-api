@@ -25,7 +25,7 @@ pub struct App<'a> {
     b_cache: Option<Rc<&'a CachePairReader>>,
 
     explorer_widget: widgets::Explorer<'a>,
-    info_widget: widgets::Info,
+    info_widget: widgets::Info<'a>,
     extract_widget: widgets::Extract<'a>,
 }
 
@@ -54,15 +54,20 @@ impl<'a> App<'a> {
         let f_cache = f_cache.map(|cache| Rc::new(cache));
         let b_cache = b_cache.map(|cache| Rc::new(cache));
 
+        let explorer_widget =
+            widgets::Explorer::new(h_cache.clone()).wrap_err("Explorer widget failed")?;
+        let info_widget = widgets::Info::new(h_cache.clone());
+        let extract_widget = widgets::Extract::new();
+
         Ok(App {
             exit: false,
             output_directory,
-            h_cache: h_cache.clone(),
+            h_cache,
             f_cache,
             b_cache,
-            explorer_widget: widgets::Explorer::new(h_cache).wrap_err("Explorer widget failed")?,
-            info_widget: widgets::Info::new(),
-            extract_widget: widgets::Extract::new(),
+            explorer_widget,
+            info_widget,
+            extract_widget,
         })
     }
 
@@ -127,6 +132,10 @@ impl App<'_> {
     fn handle_key_input<I: Into<KeyInput>>(&mut self, input: I) -> Result<()> {
         match input.into() {
             KeyInput::Quit => self.exit(),
+            KeyInput::Down | KeyInput::Up | KeyInput::Right | KeyInput::Left => {
+                // Update the info widget with the current node only on navigation
+                self.info_widget.set_node(self.explorer_widget.current());
+            }
             _ => {}
         }
         Ok(())

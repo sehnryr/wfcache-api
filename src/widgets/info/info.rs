@@ -1,41 +1,68 @@
-use ratatui::prelude::*;
-use ratatui::widgets::{block::*, Borders};
+use std::rc::Rc;
 
-#[derive(Debug, Clone, Copy)]
-pub struct Info {}
+use derivative::Derivative;
+use lotus_lib::cache_pair::CachePairReader;
+use lotus_lib::toc::{FileNode, Node, NodeKind};
+use ratatui::buffer::Buffer;
+use ratatui::layout::Rect;
+use ratatui::text::Line;
+use ratatui::widgets::{Block, Borders, Padding, Paragraph, Widget, WidgetRef};
 
-impl Info {
-    pub fn new() -> Self {
-        Self {}
+#[derive(Clone, Derivative)]
+#[derivative(Debug)]
+pub struct Info<'a> {
+    #[derivative(Debug = "ignore")]
+    h_cache: Rc<&'a CachePairReader>,
+    node: Option<Node>,
+}
+
+impl<'a> Info<'a> {
+    pub fn new(h_cache: Rc<&'a CachePairReader>) -> Self {
+        Self {
+            h_cache,
+            node: None,
+        }
+    }
+
+    pub fn set_node(&mut self, node: &Node) {
+        self.node = Some(node.clone());
     }
 }
 
-impl Widget for Info {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        Block::default()
+impl WidgetRef for Info<'_> {
+    fn render_ref(&self, area: Rect, buf: &mut Buffer) {
+        let content = if let Some(node) = &self.node {
+            let node_name = format!("Name: {}", node.name());
+            let node_path = format!("Path: {}", node.path().to_string_lossy());
+            let mut content = vec![
+                Line::from(vec![node_name.into()]),
+                Line::from(vec![node_path.into()]),
+            ];
+
+            if node.kind() == NodeKind::File {
+                let node_cache_offset = format!("Cache offset: {}", node.cache_offset());
+                let node_timestamp = format!("Timestamp: {}", node.timestamp());
+                let node_compressed_length = format!("Compressed length: {}", node.comp_len());
+                let node_length = format!("Length: {}", node.len());
+
+                content.extend(vec![
+                    Line::from(vec![node_cache_offset.into()]),
+                    Line::from(vec![node_timestamp.into()]),
+                    Line::from(vec![node_compressed_length.into()]),
+                    Line::from(vec![node_length.into()]),
+                ]);
+            }
+
+            content
+        } else {
+            Vec::new()
+        };
+
+        let block = Block::default()
             .title(" Info ")
             .borders(Borders::ALL)
-            .render(area, buf);
-    }
-}
+            .padding(Padding::horizontal(1));
 
-#[cfg(test)]
-mod tests {
-    use ratatui::assert_buffer_eq;
-
-    use super::*;
-
-    #[test]
-    fn render() {
-        let info = Info::new();
-        let mut buf = Buffer::empty(Rect::new(0, 0, 50, 2));
-
-        info.render(buf.area, &mut buf);
-
-        let expected = Buffer::with_lines(vec![
-            "┌ Info ──────────────────────────────────────────┐",
-            "└────────────────────────────────────────────────┘",
-        ]);
-        assert_buffer_eq!(buf, expected);
+        Paragraph::new(content).block(block).render(area, buf);
     }
 }
