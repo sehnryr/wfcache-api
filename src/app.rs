@@ -78,22 +78,6 @@ impl<'a> App<'a> {
         })
     }
 
-    pub fn output_directory(&self) -> &PathBuf {
-        &self.output_directory
-    }
-
-    pub fn h_cache(&self) -> Rc<&CachePairReader> {
-        self.h_cache.clone()
-    }
-
-    pub fn f_cache(&self) -> Option<Rc<&CachePairReader>> {
-        self.f_cache.clone()
-    }
-
-    pub fn b_cache(&self) -> Option<Rc<&CachePairReader>> {
-        self.b_cache.clone()
-    }
-
     /// runs the application's main loop until the user quits
     pub async fn run(&mut self, terminal: &mut Tui) -> Result<()> {
         while !self.exit {
@@ -194,8 +178,8 @@ mod test {
         let app = App::try_init(package, output_directory).unwrap();
 
         // Misc package has H, F, and B caches
-        assert!(!app.h_cache().files().is_empty());
-        assert!(!app.f_cache().unwrap().files().is_empty());
-        assert!(!app.b_cache().unwrap().files().is_empty());
+        assert!(!app.h_cache.files().is_empty());
+        assert!(!app.f_cache.unwrap().files().is_empty());
+        assert!(!app.b_cache.unwrap().files().is_empty());
     }
 }
