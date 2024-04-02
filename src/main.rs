@@ -23,8 +23,7 @@ async fn main() -> Result<()> {
     // Initialize the ratatui terminal
     let mut tui = tui::Tui::new()
         .wrap_err("Failed to initialize TUI")?
-        .frame_rate(30)
-        .tick_rate(1);
+        .frame_rate(30);
     tui.enter().wrap_err("Failed to enter TUI")?;
 
     // Run the ratatui app

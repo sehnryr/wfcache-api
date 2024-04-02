@@ -18,7 +18,6 @@ pub enum Event {
     Quit,
     Error,
     Closed,
-    Tick,
     Render,
     FocusGained,
     FocusLost,
@@ -35,7 +34,6 @@ pub struct Tui {
     event_rx: UnboundedReceiver<Event>,
     event_tx: UnboundedSender<Event>,
     frame_rate: usize,
-    tick_rate: usize,
 }
 
 impl Tui {
@@ -48,17 +46,11 @@ impl Tui {
             event_rx,
             event_tx,
             frame_rate: 30,
-            tick_rate: 1,
         })
     }
 
     pub fn frame_rate(mut self, frame_rate: usize) -> Self {
         self.frame_rate = frame_rate;
-        self
-    }
-
-    pub fn tick_rate(mut self, tick_rate: usize) -> Self {
-        self.tick_rate = tick_rate;
         self
     }
 
@@ -94,15 +86,12 @@ impl Tui {
     }
 
     pub fn run(&self) -> JoinHandle<()> {
-        let tick_duration = Duration::from_secs_f64(1.0 / self.tick_rate as f64);
         let frame_duration = Duration::from_secs_f64(1.0 / self.frame_rate as f64);
         let _event_tx = self.event_tx.clone();
         tokio::spawn(async move {
             let mut reader = EventStream::new();
-            let mut tick_interval = interval(tick_duration);
             let mut frame_interval = interval(frame_duration);
             loop {
-                let tick_delay = tick_interval.tick();
                 let frame_delay = frame_interval.tick();
                 let crossterm_event = reader.next().fuse();
                 tokio::select! {
@@ -124,9 +113,6 @@ impl Tui {
                             None => {},
                         }
                     },
-                    _ = tick_delay => {
-                        _event_tx.send(Event::Tick).unwrap();
-                    }
                     _ = frame_delay => {
                         _event_tx.send(Event::Render).unwrap();
                     }
