@@ -1,4 +1,6 @@
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::KeyCode;
+
+use crate::tui::Event;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum KeyInput {
