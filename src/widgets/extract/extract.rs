@@ -7,7 +7,7 @@ use ratatui::text::Line;
 use ratatui::widgets::block::{Position, Title};
 use ratatui::widgets::{Block, Borders, Widget, WidgetRef};
 
-use crate::input::KeyInput;
+use crate::action::Action;
 
 use super::Button;
 
@@ -34,8 +34,8 @@ impl Extract<'_> {
         (extract_button_area, extract_progress_area)
     }
 
-    pub fn handle<I: Into<KeyInput>>(&mut self, input: I) -> Result<()> {
-        self.button_widget.handle(input.into())?;
+    pub fn handle(&mut self, action: &Action) -> Result<()> {
+        self.button_widget.handle(action)?;
         Ok(())
     }
 }

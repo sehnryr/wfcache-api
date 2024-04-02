@@ -4,7 +4,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::widgets::{Widget, WidgetRef};
 
-use crate::input::KeyInput;
+use crate::action::Action;
 use crate::widgets::button::Button as ButtonWidget;
 
 #[derive(Debug, Clone)]
@@ -25,9 +25,9 @@ impl Button<'_> {
         self.button_widget.toggle();
     }
 
-    pub fn handle(&mut self, input: KeyInput) -> Result<()> {
-        match input {
-            KeyInput::Space => self.toggle(),
+    pub fn handle(&mut self, action: &Action) -> Result<()> {
+        match action {
+            Action::ExtractToggle => self.toggle(),
             _ => {}
         }
         Ok(())
