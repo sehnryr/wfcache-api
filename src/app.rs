@@ -3,7 +3,6 @@ use std::rc::Rc;
 
 use color_eyre::eyre::ContextCompat;
 use color_eyre::{eyre::Context, Result};
-use crossterm::event;
 use lotus_lib::cache_pair::{CachePair, CachePairReader};
 use lotus_lib::package::Package;
 use lotus_lib::package::PackageTrioType;
@@ -13,7 +12,7 @@ use ratatui::widgets::Widget;
 use ratatui::Frame;
 
 use crate::input::KeyInput;
-use crate::tui;
+use crate::tui::{Event, Tui};
 use crate::widgets;
 
 pub struct App<'a> {
@@ -91,10 +90,15 @@ impl<'a> App<'a> {
 
 impl App<'_> {
     /// runs the application's main loop until the user quits
-    pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
+    pub async fn run(&mut self, terminal: &mut Tui) -> Result<()> {
         while !self.exit {
-            terminal.draw(|frame| self.render_frame(frame))?;
-            self.handle_events().wrap_err("handle events failed")?;
+            let event = terminal.next().await?;
+
+            if let Event::Render = event.clone() {
+                terminal.draw(|frame| self.render_frame(frame))?;
+            }
+
+            self.handle_events(event).wrap_err("handle events failed")?;
         }
         Ok(())
     }
@@ -104,14 +108,7 @@ impl App<'_> {
     }
 
     /// updates the application's state based on user input
-    fn handle_events(&mut self) -> Result<()> {
-        // poll for events every 16ms or approximately 60fps
-        if !event::poll(std::time::Duration::from_millis(16))? {
-            return Ok(());
-        }
-
-        let event = event::read()?;
-
+    fn handle_events(&mut self, event: Event) -> Result<()> {
         // handle file explorer events
         self.explorer_widget
             .handle(&event)
@@ -180,8 +177,8 @@ mod test {
         assert!(cache_windows_directory.is_dir());
     }
 
-    #[test]
-    fn test_init() {
+    #[tokio::test]
+    async fn test_init() {
         let cache_windows_directory = PathBuf::from(HOME_DIR).join(CACHE_WINDOWS_DIRECTORY);
         let package_name = PACKAGE_NAME.to_string();
         let output_directory = PathBuf::from(HOME_DIR).join(OUTPUT_DIRECTORY);

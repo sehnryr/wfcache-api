@@ -17,10 +17,10 @@ categories = ["command-line-utilities"]
 # anyhow = "1.0.79"
 clap = { version = "4.4.18", features = ["derive"] }
 color-eyre = "0.6.3"
-# crc = "3.0.1"
-crossterm = "0.27.0"
+crossterm = { version = "0.27.0", features = ["event-stream"] }
 # ddsfile = "0.5.2"
 derivative = "2.2.0"
+futures = "0.3.30"
 # env_logger = "0.11.1"
 indoc = "2.0.5"
 # itertools = "0.12.1"
@@ -31,6 +31,8 @@ lotus-utils-texture = "0.1.0"
 # lscolors = { version = "0.17.0", features = ["ansi_term"] }
 # rand = "0.8.5"
 ratatui = { version = "0.26.1", features = ["unstable-widget-ref"] }
+tokio = { version = "1.37.0", features = ["full"] }
+tokio-util = "0.7.10"
 # relative-path = "1.9.2"
 # rustyline = "10.1.1"
 # serde_json = "1.0.113"
