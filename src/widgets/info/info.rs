@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use derivative::Derivative;
 use lotus_lib::cache_pair::CachePairReader;
-use lotus_lib::toc::{FileNode, Node, NodeKind};
+use lotus_lib::toc::{DirectoryNode, FileNode, Node, NodeKind};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style, Stylize};
@@ -86,6 +86,24 @@ impl WidgetRef for Info<'_> {
                 Line::from(Span::styled("H Cache      ", cache_style)),
             ]);
             content.extend(cache_info(&self.h_node));
+        } else {
+            let children = self.h_node.children();
+            let (file_count, dir_count) = children.iter().fold((0, 0), |(f, d), node| {
+                if node.kind() == NodeKind::File {
+                    (f + 1, d)
+                } else {
+                    (f, d + 1)
+                }
+            });
+
+            let file_count = format!("File count: {}", file_count);
+            let dir_count = format!("Dir count:  {}", dir_count);
+
+            content.extend(vec![
+                Line::from(""),
+                Line::from(file_count),
+                Line::from(dir_count),
+            ]);
         }
 
         if let Some(f_node) = &self.f_node {
