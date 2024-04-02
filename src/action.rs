@@ -11,6 +11,7 @@ pub enum Action {
 
     ExtractToggle,
 
+    Tick,
     Render,
     Quit,
     None,
@@ -20,6 +21,7 @@ impl From<&Event> for Action {
     fn from(event: &Event) -> Self {
         match event {
             Event::Quit => Action::Quit,
+            Event::Tick => Action::Tick,
             Event::Render => Action::Render,
             Event::Key(key) => match key.code {
                 KeyCode::Char('j') | KeyCode::Down => Action::NavigateDown,
