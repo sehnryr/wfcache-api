@@ -1,10 +1,7 @@
-use std::io::Result;
-
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::widgets::{Widget, WidgetRef};
 
-use crate::action::Action;
 use crate::widgets::button::Button as ButtonWidget;
 
 #[derive(Debug, Clone)]
@@ -21,16 +18,8 @@ impl Button<'_> {
         }
     }
 
-    fn toggle(&mut self) {
-        self.button_widget.toggle();
-    }
-
-    pub fn handle(&mut self, action: &Action) -> Result<()> {
-        match action {
-            Action::ExtractToggle => self.toggle(),
-            _ => {}
-        }
-        Ok(())
+    pub fn set_active(&mut self, active: bool) {
+        self.button_widget.set_active(active);
     }
 }
 

@@ -53,8 +53,8 @@ impl<'a> Button<'a> {
         self
     }
 
-    pub fn toggle(&mut self) {
-        self.active = !self.active;
+    pub fn set_active(&mut self, active: bool) {
+        self.active = active;
     }
 
     fn label(&self) -> &str {
@@ -210,7 +210,7 @@ mod tests {
 
         // render active label
         buf.reset();
-        info.toggle();
+        info.set_active(true);
         info.render_ref(buf.area, &mut buf);
 
         let expected = {

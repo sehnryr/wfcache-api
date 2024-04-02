@@ -1,5 +1,5 @@
 mod button;
 mod extract;
+mod gauge;
 
-use button::Button;
 pub use extract::Extract;
