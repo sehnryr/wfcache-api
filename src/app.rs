@@ -13,7 +13,7 @@ use ratatui::Frame;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 use crate::action::Action;
-use crate::tui::{Event, Tui};
+use crate::tui::Tui;
 use crate::widgets;
 
 pub struct App<'a> {
@@ -89,10 +89,10 @@ impl<'a> App<'a> {
 
             while let Ok(action) = self.action_rx.try_recv() {
                 self.handle(&action)?;
-            }
 
-            if let Event::Render = event.clone() {
-                terminal.draw(|frame| self.render_frame(frame))?;
+                if let Action::Render = action {
+                    terminal.draw(|frame| self.render_frame(frame))?;
+                }
             }
         }
         Ok(())
