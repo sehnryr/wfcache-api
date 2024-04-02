@@ -64,7 +64,7 @@ impl<'a> Explorer<'a> {
                 }
             }
             Action::NavigateIn => {
-                if self.nodes[self.selected].kind() == NodeKind::Directory {
+                if self.selected != 0 && self.nodes[self.selected].kind() == NodeKind::Directory {
                     self.cwd = self.nodes.swap_remove(self.selected).path();
                     self.get_and_set_files()?;
                     self.selected = 0
@@ -102,13 +102,14 @@ impl<'a> Explorer<'a> {
         files.sort_by(|a, b| a.name().cmp(&b.name()));
 
         if let Some(_parent) = self.cwd.parent() {
-            let mut nodes = Vec::with_capacity(1 + directories.len() + files.len());
+            let mut nodes = Vec::with_capacity(2 + directories.len() + files.len());
 
             let parent_node = current_directory.parent().ok_or(Error::new(
                 ErrorKind::NotFound,
                 "Parent directory not found",
             ))?;
 
+            nodes.push(current_directory);
             nodes.push(parent_node);
 
             nodes.extend(directories);
@@ -116,7 +117,9 @@ impl<'a> Explorer<'a> {
 
             self.nodes = nodes;
         } else {
-            let mut nodes = Vec::with_capacity(directories.len() + files.len());
+            let mut nodes = Vec::with_capacity(1 + directories.len() + files.len());
+
+            nodes.push(current_directory);
 
             nodes.extend(directories);
             nodes.extend(files);
@@ -138,7 +141,9 @@ impl WidgetRef for Explorer<'_> {
         };
 
         let nodes_text = self.nodes.iter().enumerate().map(|(index, node)| {
-            if index == 0 && self.cwd.parent().is_some() {
+            if index == 0 {
+                Span::styled("./", NodeStyle::Directory).into()
+            } else if index == 1 && self.cwd.parent().is_some() {
                 Span::styled("../", NodeStyle::Directory).into()
             } else {
                 node.text()
