@@ -11,7 +11,7 @@ use ratatui::style::{Color, Style};
 use ratatui::text::{Span, Text};
 use ratatui::widgets::{Block, Borders, HighlightSpacing, List, ListState, WidgetRef};
 
-use crate::input::KeyInput;
+use crate::action::Action;
 
 #[derive(Clone, Derivative)]
 #[derivative(Debug, PartialEq, Eq, Hash)]
@@ -38,23 +38,23 @@ impl<'a> Explorer<'a> {
         Ok(file_explorer)
     }
 
-    pub fn handle<I: Into<KeyInput>>(&mut self, input: I) -> Result<()> {
-        match input.into() {
-            KeyInput::Up => {
+    pub fn handle(&mut self, action: &Action) -> Result<()> {
+        match action {
+            Action::NavigateUp => {
                 if self.selected == 0 {
                     self.selected = self.nodes.len() - 1;
                 } else {
                     self.selected -= 1;
                 }
             }
-            KeyInput::Down => {
+            Action::NavigateDown => {
                 if self.selected == self.nodes.len() - 1 {
                     self.selected = 0;
                 } else {
                     self.selected += 1;
                 }
             }
-            KeyInput::Left => {
+            Action::NavigateOut => {
                 let parent = self.cwd.parent();
 
                 if let Some(parent) = parent {
@@ -63,7 +63,7 @@ impl<'a> Explorer<'a> {
                     self.selected = 0
                 }
             }
-            KeyInput::Right => {
+            Action::NavigateIn => {
                 if self.nodes[self.selected].kind() == NodeKind::Directory {
                     self.cwd = self.nodes.swap_remove(self.selected).path();
                     self.get_and_set_files()?;

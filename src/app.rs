@@ -10,13 +10,16 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::widgets::Widget;
 use ratatui::Frame;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
-use crate::input::KeyInput;
+use crate::action::Action;
 use crate::tui::{Event, Tui};
 use crate::widgets;
 
 pub struct App<'a> {
     exit: bool,
+    action_rx: UnboundedReceiver<Action>,
+    action_tx: UnboundedSender<Action>,
     output_directory: PathBuf,
 
     h_cache: Rc<&'a CachePairReader>,
@@ -59,8 +62,12 @@ impl<'a> App<'a> {
             .wrap_err("Info widget failed")?;
         let extract_widget = widgets::Extract::new();
 
+        let (action_tx, action_rx) = unbounded_channel();
+
         Ok(App {
             exit: false,
+            action_rx,
+            action_tx,
             output_directory,
             h_cache,
             f_cache,
@@ -86,19 +93,23 @@ impl<'a> App<'a> {
     pub fn b_cache(&self) -> Option<Rc<&CachePairReader>> {
         self.b_cache.clone()
     }
-}
 
-impl App<'_> {
     /// runs the application's main loop until the user quits
     pub async fn run(&mut self, terminal: &mut Tui) -> Result<()> {
         while !self.exit {
             let event = terminal.next().await?;
+            let action = Action::from(&event);
+            if action != Action::None {
+                self.action_tx.send(action)?;
+            }
+
+            while let Ok(action) = self.action_rx.try_recv() {
+                self.handle(&action)?;
+            }
 
             if let Event::Render = event.clone() {
                 terminal.draw(|frame| self.render_frame(frame))?;
             }
-
-            self.handle_events(event).wrap_err("handle events failed")?;
         }
         Ok(())
     }
@@ -108,29 +119,23 @@ impl App<'_> {
     }
 
     /// updates the application's state based on user input
-    fn handle_events(&mut self, event: Event) -> Result<()> {
+    fn handle(&mut self, action: &Action) -> Result<()> {
         // handle file explorer events
         self.explorer_widget
-            .handle(&event)
+            .handle(&action)
             .wrap_err("explorer widget handle failed")?;
 
         // handle extract widget events
         self.extract_widget
-            .handle(&event)
+            .handle(&action)
             .wrap_err("extract widget handle failed")?;
 
-        // handle application events
-        self.handle_key_input(&event).wrap_err("app handle failed")
-    }
-
-    fn exit(&mut self) {
-        self.exit = true;
-    }
-
-    fn handle_key_input<I: Into<KeyInput>>(&mut self, input: I) -> Result<()> {
-        match input.into() {
-            KeyInput::Quit => self.exit(),
-            KeyInput::Down | KeyInput::Up | KeyInput::Right | KeyInput::Left => {
+        match action {
+            Action::Quit => self.exit = true,
+            Action::NavigateDown
+            | Action::NavigateUp
+            | Action::NavigateIn
+            | Action::NavigateOut => {
                 // Update the info widget with the current node only on navigation
                 self.info_widget.set_node(self.explorer_widget.current())?;
             }
