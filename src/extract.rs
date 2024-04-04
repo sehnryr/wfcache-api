@@ -32,10 +32,9 @@ pub fn extract_file(
     let mut file_name: String = file_name;
     let file_data: Vec<u8>;
 
-    if file_name.ends_with(".png") {
-        file_name = package.get_texture_file_name(file_node);
-        file_data = package.decompress_texture(file_node).unwrap();
-    } else if file_name.ends_with(".wav") {
+    if package.is_texture(file_node).unwrap() {
+        (file_data, file_name) = package.decompress_texture(file_node).unwrap();
+    } else if package.is_audio(file_node).unwrap() {
         (file_data, file_name) = package.decompress_audio(file_node).unwrap();
     } else {
         // Decompress and extract a file from the cache without parsing it (e.g. audio, texture)

@@ -552,9 +552,9 @@ dependencies = [
 
 [[package]]
 name = "lotus-utils-audio"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03ce196fa8a2c707927061acda02a0e44069a11be71e5828b84e7e4ccbe6fb2d"
+checksum = "c462e561b6f6c6bd1c63f8012cbf22bb7d1ce7a8d9ae4b72657e3ced8b03daed"
 dependencies = [
  "anyhow",
  "bytebuffer",
@@ -567,9 +567,9 @@ dependencies = [
 
 [[package]]
 name = "lotus-utils-texture"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7eaa7d7db031be30b4536be7e514ffd44d9be2764a96217451f005b7218d3211"
+checksum = "4ad52e3700e2e3acd41d6c92f75345312cbc4c20ac79c8381383af101088ddde"
 dependencies = [
  "anyhow",
  "bytebuffer",

@@ -19,8 +19,8 @@ derivative = "2.2.0"
 futures = "0.3.30"
 indoc = "2.0.5"
 lotus-lib = "4.0.0"
-lotus-utils-audio = "0.1.1"
-lotus-utils-texture = "0.1.1"
+lotus-utils-audio = "0.2.0"
+lotus-utils-texture = "0.2.0"
 ratatui = { version = "0.26.1", features = ["unstable-widget-ref"] }
 tokio = { version = "1.37.0", features = ["full"] }
 tokio-util = "0.7.10"
