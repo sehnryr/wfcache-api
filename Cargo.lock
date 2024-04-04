@@ -538,24 +538,23 @@ checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
 
 [[package]]
 name = "lotus-lib"
-version = "3.0.1"
+version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7cf868c808f052d55ea5bfa7a5506517e91108de317683a0239bec18d6966a2"
+checksum = "631827ae71ba0af1d5c263755228f8319bb9acbdf8644f368c18a06b32f3ba38"
 dependencies = [
  "anyhow",
  "derivative",
  "log",
  "lz4_flex",
  "oodle-safe",
- "rctree",
  "zerocopy",
 ]
 
 [[package]]
 name = "lotus-utils-audio"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e64366fa9120c9204fb091d879b1632708576cadb9ed9f46dbd6812c03f572b"
+checksum = "03ce196fa8a2c707927061acda02a0e44069a11be71e5828b84e7e4ccbe6fb2d"
 dependencies = [
  "anyhow",
  "bytebuffer",
@@ -568,9 +567,9 @@ dependencies = [
 
 [[package]]
 name = "lotus-utils-texture"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8707783972b2bc49c275897e84f3fc36d539506135635d3404804a918a19ae4"
+checksum = "7eaa7d7db031be30b4536be7e514ffd44d9be2764a96217451f005b7218d3211"
 dependencies = [
  "anyhow",
  "bytebuffer",
@@ -795,12 +794,6 @@ dependencies = [
  "unicode-segmentation",
  "unicode-width",
 ]
-
-[[package]]
-name = "rctree"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e03e7866abec1101869ffa8e2c8355c4c2419d0214ece0cc3e428e5b94dea6e9"
 
 [[package]]
 name = "redox_syscall"

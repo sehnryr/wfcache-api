@@ -24,18 +24,18 @@ impl Default for ButtonTheme {
 }
 
 #[derive(Debug, Clone)]
-pub struct Button<'a> {
-    default_label: &'a str,
-    active_label: Option<&'a str>,
-    inactive_label: Option<&'a str>,
+pub struct Button {
+    default_label: String,
+    active_label: Option<String>,
+    inactive_label: Option<String>,
     theme: ButtonTheme,
     active: bool,
 }
 
-impl<'a> Button<'a> {
-    pub fn new(default_label: &'a str) -> Self {
+impl Button {
+    pub fn new(default_label: &str) -> Self {
         Self {
-            default_label,
+            default_label: default_label.to_string(),
             active_label: None,
             inactive_label: None,
             theme: ButtonTheme::default(),
@@ -43,13 +43,13 @@ impl<'a> Button<'a> {
         }
     }
 
-    pub fn active_label(mut self, label: &'a str) -> Self {
-        self.active_label = Some(label);
+    pub fn active_label(mut self, label: &str) -> Self {
+        self.active_label = Some(label.to_string());
         self
     }
 
-    pub fn inactive_label(mut self, label: &'a str) -> Self {
-        self.inactive_label = Some(label);
+    pub fn inactive_label(mut self, label: &str) -> Self {
+        self.inactive_label = Some(label.to_string());
         self
     }
 
@@ -57,16 +57,16 @@ impl<'a> Button<'a> {
         self.active = active;
     }
 
-    fn label(&self) -> &str {
+    fn label(&self) -> &String {
         if self.active {
-            self.active_label.unwrap_or(self.default_label)
+            self.active_label.as_ref().unwrap_or(&self.default_label)
         } else {
-            self.inactive_label.unwrap_or(self.default_label)
+            self.inactive_label.as_ref().unwrap_or(&self.default_label)
         }
     }
 }
 
-impl WidgetRef for Button<'_> {
+impl WidgetRef for Button {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         if area.height == 0 {
             return;
@@ -101,7 +101,7 @@ impl WidgetRef for Button<'_> {
             );
         }
         // render label centered
-        let label = Line::from(self.label());
+        let label = Line::from(self.label().as_str());
         buf.set_line(
             area.x + (area.width.saturating_sub(label.width() as u16)) / 2,
             area.y + (area.height.saturating_sub(1)) / 2,

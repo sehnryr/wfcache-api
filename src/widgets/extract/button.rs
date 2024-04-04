@@ -5,12 +5,12 @@ use ratatui::widgets::{Widget, WidgetRef};
 use crate::widgets::button::Button as ButtonWidget;
 
 #[derive(Debug, Clone)]
-pub struct Button<'a> {
-    button_widget: ButtonWidget<'a>,
+pub struct Button {
+    button_widget: ButtonWidget,
 }
 
-impl Button<'_> {
-    pub fn new<'a>() -> Self {
+impl Button {
+    pub fn new() -> Self {
         Self {
             button_widget: ButtonWidget::new("")
                 .active_label("Cancel")
@@ -23,7 +23,7 @@ impl Button<'_> {
     }
 }
 
-impl WidgetRef for Button<'_> {
+impl WidgetRef for Button {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         self.button_widget.render(area, buf);
     }

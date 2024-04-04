@@ -25,9 +25,9 @@ futures = "0.3.30"
 indoc = "2.0.5"
 # itertools = "0.12.1"
 # log = "0.4.20"
-lotus-lib = "3.0.1"
-lotus-utils-audio = "0.1.0"
-lotus-utils-texture = "0.1.0"
+lotus-lib = "4.0.0"
+lotus-utils-audio = "0.1.1"
+lotus-utils-texture = "0.1.1"
 # lscolors = { version = "0.17.0", features = ["ansi_term"] }
 # rand = "0.8.5"
 ratatui = { version = "0.26.1", features = ["unstable-widget-ref"] }

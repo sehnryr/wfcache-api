@@ -1,11 +1,13 @@
 use std::path::PathBuf;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use color_eyre::eyre::ContextCompat;
 use color_eyre::{eyre::Context, Result};
 use lotus_lib::cache_pair::{CachePair, CachePairReader};
+#[cfg(test)]
 use lotus_lib::package::Package;
-use lotus_lib::package::PackageTrioType;
+use lotus_lib::package::PackageCollection;
+use lotus_lib::package::PackageType;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::widgets::Widget;
@@ -16,66 +18,74 @@ use crate::action::Action;
 use crate::tui::Tui;
 use crate::widgets;
 
-pub struct App<'a> {
+pub struct App {
     exit: bool,
     action_rx: UnboundedReceiver<Action>,
     action_tx: UnboundedSender<Action>,
-    output_directory: PathBuf,
+    #[cfg(test)]
+    package: Arc<Package<CachePairReader>>,
 
-    h_cache: Rc<&'a CachePairReader>,
-    f_cache: Option<Rc<&'a CachePairReader>>,
-    b_cache: Option<Rc<&'a CachePairReader>>,
-
-    explorer_widget: widgets::Explorer<'a>,
-    info_widget: widgets::Info<'a>,
-    extract_widget: widgets::Extract<'a>,
+    explorer_widget: widgets::Explorer,
+    info_widget: widgets::Info,
+    extract_widget: widgets::Extract,
 }
 
-impl<'a> App<'a> {
+impl App {
     pub fn try_init(
-        package: &'a Package<CachePairReader>,
+        cache_windows_directory: PathBuf,
+        package_name: String,
         output_directory: PathBuf,
-    ) -> Result<App<'a>> {
-        let h_cache = package
-            .get(&PackageTrioType::H)
-            .wrap_err("H cache not found")?;
-        let f_cache = package.get(&PackageTrioType::F);
-        let b_cache = package.get(&PackageTrioType::B);
+    ) -> Result<Self> {
+        let mut collection =
+            PackageCollection::<CachePairReader>::new(cache_windows_directory, true)
+                .wrap_err("Failed to initialize package collection")?;
 
-        h_cache.read_toc().unwrap();
-        f_cache.and_then(|cache| {
-            cache.read_toc().unwrap();
-            Some(cache)
-        });
-        b_cache.and_then(|cache| {
-            cache.read_toc().unwrap();
-            Some(cache)
-        });
+        let package = collection
+            .borrow_mut(&package_name)
+            .wrap_err(format!("Package {} not found", &package_name))?;
 
-        let h_cache = Rc::new(h_cache);
-        let f_cache = f_cache.map(|cache| Rc::new(cache));
-        let b_cache = b_cache.map(|cache| Rc::new(cache));
+        package
+            .borrow_mut(PackageType::H)
+            .map(|cache| cache.read_toc().unwrap());
+        package
+            .borrow_mut(PackageType::F)
+            .map(|cache| cache.read_toc().unwrap());
+        package
+            .borrow_mut(PackageType::B)
+            .map(|cache| cache.read_toc().unwrap());
 
-        let explorer_widget =
-            widgets::Explorer::new(h_cache.clone()).wrap_err("Explorer widget failed")?;
-        let info_widget = widgets::Info::new(h_cache.clone(), f_cache.clone(), b_cache.clone())
-            .wrap_err("Info widget failed")?;
-        let extract_widget = widgets::Extract::new();
+        let package = Arc::new(collection.take(&package_name).unwrap());
+
+        let explorer_widget = widgets::Explorer::new(package.clone());
+        let info_widget = widgets::Info::new(package.clone());
+        let extract_widget = widgets::Extract::new(package.clone(), &output_directory);
 
         let (action_tx, action_rx) = unbounded_channel();
-
-        Ok(App {
+        Ok(Self {
             exit: false,
             action_rx,
             action_tx,
-            output_directory,
-            h_cache,
-            f_cache,
-            b_cache,
+            #[cfg(test)]
+            package,
             explorer_widget,
             info_widget,
             extract_widget,
         })
+    }
+
+    #[cfg(test)]
+    fn h_cache(&self) -> &CachePairReader {
+        self.package.borrow(PackageType::H).unwrap()
+    }
+
+    #[cfg(test)]
+    fn f_cache(&self) -> Option<&CachePairReader> {
+        self.package.borrow(PackageType::F)
+    }
+
+    #[cfg(test)]
+    fn b_cache(&self) -> Option<&CachePairReader> {
+        self.package.borrow(PackageType::B)
     }
 
     /// runs the application's main loop until the user quits
@@ -105,9 +115,7 @@ impl<'a> App<'a> {
     /// updates the application's state based on user input
     fn handle(&mut self, action: &Action) -> Result<()> {
         // handle file explorer events
-        self.explorer_widget
-            .handle(&action)
-            .wrap_err("explorer widget handle failed")?;
+        self.explorer_widget.handle(&action);
 
         // handle extract widget events
         self.extract_widget
@@ -121,7 +129,10 @@ impl<'a> App<'a> {
             | Action::NavigateIn
             | Action::NavigateOut => {
                 // Update the info widget with the current node only on navigation
-                self.info_widget.set_node(self.explorer_widget.current())?;
+                self.info_widget.set_node(self.explorer_widget.current());
+
+                // Update the extract widget with the current node only on navigation
+                self.extract_widget.set_node(self.explorer_widget.current());
             }
             _ => {}
         }
@@ -139,7 +150,7 @@ impl<'a> App<'a> {
     }
 }
 
-impl Widget for &App<'_> {
+impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let (explorer_area, info_area, extract_area) = self.compute_layout(area);
 
@@ -151,8 +162,6 @@ impl Widget for &App<'_> {
 
 #[cfg(test)]
 mod test {
-    use lotus_lib::package::PackageCollection;
-
     use super::*;
 
     const HOME_DIR: &str = env!("HOME"); // TODO: Windows support
@@ -172,14 +181,11 @@ mod test {
         let package_name = PACKAGE_NAME.to_string();
         let output_directory = PathBuf::from(HOME_DIR).join(OUTPUT_DIRECTORY);
 
-        let collection = PackageCollection::<CachePairReader>::new(cache_windows_directory, true);
-        let package = collection.get_package(&package_name).unwrap();
-
-        let app = App::try_init(package, output_directory).unwrap();
+        let app = App::try_init(cache_windows_directory, package_name, output_directory).unwrap();
 
         // Misc package has H, F, and B caches
-        assert!(!app.h_cache.files().is_empty());
-        assert!(!app.f_cache.unwrap().files().is_empty());
-        assert!(!app.b_cache.unwrap().files().is_empty());
+        assert!(!app.h_cache().files().is_empty());
+        assert!(!app.f_cache().unwrap().files().is_empty());
+        assert!(!app.b_cache().unwrap().files().is_empty());
     }
 }

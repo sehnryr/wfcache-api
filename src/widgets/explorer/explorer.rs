@@ -1,9 +1,9 @@
-use std::io::{Error, ErrorKind, Result};
 use std::path::PathBuf;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use derivative::Derivative;
 use lotus_lib::cache_pair::CachePairReader;
+use lotus_lib::package::{Package, PackageType};
 use lotus_lib::toc::{DirectoryNode, Node, NodeKind};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -13,32 +13,31 @@ use ratatui::widgets::{Block, Borders, HighlightSpacing, List, ListState, Widget
 
 use crate::action::Action;
 
-#[derive(Clone, Derivative)]
-#[derivative(Debug, PartialEq, Eq, Hash)]
-pub struct Explorer<'a> {
+#[derive(Derivative)]
+#[derivative(Debug)]
+pub struct Explorer {
     cwd: PathBuf,
-    #[derivative(Debug = "ignore", PartialEq = "ignore", Hash = "ignore")]
-    h_cache: Rc<&'a CachePairReader>,
-    #[derivative(PartialEq = "ignore", Hash = "ignore")]
+    #[derivative(Debug = "ignore")]
+    package: Arc<Package<CachePairReader>>,
     nodes: Vec<Node>,
     selected: usize,
 }
 
-impl<'a> Explorer<'a> {
-    pub fn new(h_cache: Rc<&'a CachePairReader>) -> Result<Explorer<'a>> {
+impl Explorer {
+    pub fn new(package: Arc<Package<CachePairReader>>) -> Self {
         let mut file_explorer = Self {
             cwd: PathBuf::from("/"),
-            h_cache,
+            package,
             nodes: vec![],
             selected: 0,
         };
 
-        file_explorer.get_and_set_files()?;
+        file_explorer.get_and_set_files();
 
-        Ok(file_explorer)
+        file_explorer
     }
 
-    pub fn handle(&mut self, action: &Action) -> Result<()> {
+    pub fn handle(&mut self, action: &Action) {
         match action {
             Action::NavigateUp => {
                 if self.selected == 0 {
@@ -59,21 +58,19 @@ impl<'a> Explorer<'a> {
 
                 if let Some(parent) = parent {
                     self.cwd = parent.to_path_buf();
-                    self.get_and_set_files()?;
+                    self.get_and_set_files();
                     self.selected = 0
                 }
             }
             Action::NavigateIn => {
                 if self.selected != 0 && self.nodes[self.selected].kind() == NodeKind::Directory {
                     self.cwd = self.nodes.swap_remove(self.selected).path();
-                    self.get_and_set_files()?;
+                    self.get_and_set_files();
                     self.selected = 0
                 }
             }
             _ => {}
         }
-
-        Ok(())
     }
 
     #[inline]
@@ -81,11 +78,9 @@ impl<'a> Explorer<'a> {
         &self.nodes[self.selected]
     }
 
-    fn get_and_set_files(&mut self) -> Result<()> {
-        let current_directory = self
-            .h_cache
-            .get_directory_node(&self.cwd)
-            .ok_or(Error::new(ErrorKind::NotFound, "Directory not found"))?;
+    fn get_and_set_files(&mut self) {
+        let h_cache = self.package.borrow(PackageType::H).unwrap();
+        let current_directory = h_cache.get_directory_node(&self.cwd).unwrap();
 
         let mut directories = Vec::new();
         let mut files = Vec::new();
@@ -104,10 +99,7 @@ impl<'a> Explorer<'a> {
         if let Some(_parent) = self.cwd.parent() {
             let mut nodes = Vec::with_capacity(2 + directories.len() + files.len());
 
-            let parent_node = current_directory.parent().ok_or(Error::new(
-                ErrorKind::NotFound,
-                "Parent directory not found",
-            ))?;
+            let parent_node = current_directory.parent().unwrap();
 
             nodes.push(current_directory);
             nodes.push(parent_node);
@@ -126,12 +118,10 @@ impl<'a> Explorer<'a> {
 
             self.nodes = nodes;
         }
-
-        Ok(())
     }
 }
 
-impl WidgetRef for Explorer<'_> {
+impl WidgetRef for Explorer {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         let mut state = ListState::default().with_selected(Some(self.selected));
 

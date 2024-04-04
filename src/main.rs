@@ -2,23 +2,18 @@ mod action;
 mod app;
 mod args;
 mod errors;
+mod extract;
 mod tui;
 mod widgets;
 
 use clap::Parser;
-use color_eyre::eyre::{Context, ContextCompat};
+use color_eyre::eyre::Context;
 use color_eyre::Result;
-use lotus_lib::cache_pair::CachePairReader;
-use lotus_lib::package::PackageCollection;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     errors::install_hooks()?;
     let args = args::Args::parse();
-    let collection = PackageCollection::<CachePairReader>::new(args.directory, true);
-    let package = collection
-        .get_package(&args.package)
-        .wrap_err(format!("Package {} not found", &args.package))?;
 
     // Initialize the ratatui terminal
     let mut tui = tui::Tui::new()
@@ -28,7 +23,7 @@ async fn main() -> Result<()> {
     tui.enter().wrap_err("Failed to enter TUI")?;
 
     // Run the ratatui app
-    app::App::try_init(package, args.output)?
+    app::App::try_init(args.directory, args.package, args.output)?
         .run(&mut tui)
         .await?;
 

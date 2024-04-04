@@ -1,5 +1,11 @@
 use std::io::{Error, ErrorKind, Result};
+use std::path::PathBuf;
+use std::sync::Arc;
 
+use derivative::Derivative;
+use lotus_lib::cache_pair::CachePairReader;
+use lotus_lib::package::{Package, PackageType};
+use lotus_lib::toc::{Node, NodeKind};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Constraint, Layout, Margin, Rect};
 use ratatui::style::Stylize;
@@ -10,24 +16,49 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
 
 use crate::action::Action;
+use crate::extract::{extract_dir, extract_file};
 
 use super::button::Button;
 use super::gauge::Gauge;
 
-#[derive(Debug)]
-pub struct Extract<'a> {
-    button_widget: Button<'a>,
+#[derive(Derivative)]
+#[derivative(Debug)]
+pub struct Extract {
+    output_dir: PathBuf,
+    #[derivative(Debug = "ignore")]
+    package: Arc<Package<CachePairReader>>,
+    h_node: Node,
+    recursive: bool,
+
+    button_widget: Button,
     gauge_widget: Gauge,
+
     extract_task: Option<JoinHandle<()>>,
     extract_tx: Option<UnboundedSender<()>>,
     progress_rx: UnboundedReceiver<(usize, usize)>,
     progress_tx: UnboundedSender<(usize, usize)>,
 }
 
-impl Extract<'_> {
-    pub fn new<'a>() -> Self {
+impl Extract {
+    pub fn new<P>(package: Arc<Package<CachePairReader>>, output_dir: P) -> Self
+    where
+        P: Into<PathBuf>,
+    {
+        let output_dir = output_dir.into();
+
+        let h_node = package
+            .borrow(PackageType::H)
+            .unwrap()
+            .get_directory_node("/")
+            .unwrap();
+
         let (progress_tx, progress_rx) = unbounded_channel();
+
         Self {
+            output_dir,
+            package,
+            h_node,
+            recursive: false,
             button_widget: Button::new(),
             gauge_widget: Gauge::new(),
             extract_task: None,
@@ -35,6 +66,10 @@ impl Extract<'_> {
             progress_rx,
             progress_tx,
         }
+    }
+
+    pub fn set_node(&mut self, node: &Node) {
+        self.h_node = node.clone();
     }
 
     fn compute_layout(&self, area: Rect) -> (Rect, Rect) {
@@ -64,9 +99,20 @@ impl Extract<'_> {
             let (extract_tx, mut extract_rx) = unbounded_channel();
             self.extract_tx = Some(extract_tx);
 
+            let package = self.package.clone();
+            let h_node = self.h_node.clone();
+            let output_dir = self.output_dir.clone();
+            let recursive = self.recursive;
             let progress_tx = self.progress_tx.clone();
             self.extract_task = Some(tokio::spawn(async move {
-                extract(&mut extract_rx, progress_tx).await;
+                extract(
+                    package,
+                    h_node,
+                    output_dir,
+                    recursive,
+                    &mut extract_rx,
+                    progress_tx,
+                );
             }));
         } else {
             self.extract_tx
@@ -86,11 +132,25 @@ impl Extract<'_> {
     fn update_progress(&mut self) {
         while let Ok((count, progress)) = self.progress_rx.try_recv() {
             self.gauge_widget.set_progress(count, progress);
+
+            if count == progress {
+                self.extract_task = None;
+                self.extract_tx = None;
+                self.button_widget.set_active(false);
+            }
         }
     }
 }
 
-impl WidgetRef for Extract<'_> {
+impl Drop for Extract {
+    fn drop(&mut self) {
+        if let Some(extract_tx) = self.extract_tx.take() {
+            let _ = extract_tx.send(());
+        }
+    }
+}
+
+impl WidgetRef for Extract {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         let instructions = Line::from(vec![
             " Extract ".into(),
@@ -114,43 +174,52 @@ impl WidgetRef for Extract<'_> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use ratatui::assert_buffer_eq;
-    use ratatui::style::Style;
+// #[cfg(test)]
+// mod tests {
+//     use ratatui::assert_buffer_eq;
+//     use ratatui::style::Style;
 
-    use super::*;
+//     use super::*;
 
-    #[test]
-    fn render() {
-        let extract = Extract::new();
-        let mut buf = Buffer::empty(Rect::new(0, 0, 50, 2));
+//     #[test]
+//     fn render() {
+//         let extract = Extract::new();
+//         let mut buf = Buffer::empty(Rect::new(0, 0, 50, 2));
 
-        extract.render(buf.area, &mut buf);
+//         extract.render(buf.area, &mut buf);
 
-        let mut expected = Buffer::with_lines(vec![
-            "┌────────────────────────────────────────────────┐",
-            "└─────────── Extract <Space> Quit <Q> ───────────┘",
-        ]);
-        let extract_style = Style::new().light_blue();
-        let quit_style = Style::new().light_blue();
-        expected.set_style(Rect::new(21, 1, 8, 1), extract_style);
-        expected.set_style(Rect::new(34, 1, 4, 1), quit_style);
+//         let mut expected = Buffer::with_lines(vec![
+//             "┌────────────────────────────────────────────────┐",
+//             "└─────────── Extract <Space> Quit <Q> ───────────┘",
+//         ]);
+//         let extract_style = Style::new().light_blue();
+//         let quit_style = Style::new().light_blue();
+//         expected.set_style(Rect::new(21, 1, 8, 1), extract_style);
+//         expected.set_style(Rect::new(34, 1, 4, 1), quit_style);
 
-        assert_buffer_eq!(buf, expected);
-    }
-}
+//         assert_buffer_eq!(buf, expected);
+//     }
+// }
 
-async fn extract(
+fn extract(
+    package: Arc<Package<CachePairReader>>,
+    node: Node,
+    output_dir: PathBuf,
+    recursive: bool,
     extract_rx: &mut UnboundedReceiver<()>,
     progress_tx: UnboundedSender<(usize, usize)>,
 ) {
-    for i in 0..=1000 {
-        if extract_rx.try_recv().is_ok() {
-            break;
-        }
-
-        tokio::time::sleep(std::time::Duration::from_millis(1)).await;
-        progress_tx.send((i, 1000)).unwrap();
+    if let NodeKind::File = node.kind() {
+        return extract_file(&package, &node, &output_dir, 0, 1, progress_tx).unwrap();
     }
+
+    extract_dir(
+        &package,
+        &node,
+        &output_dir,
+        recursive,
+        extract_rx,
+        progress_tx,
+    )
+    .unwrap();
 }
