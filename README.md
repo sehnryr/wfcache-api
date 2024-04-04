@@ -15,10 +15,6 @@ instructions here: https://github.com/sehnryr/get-oodle-lib
 
 - [ ] run commands from outside the shell (e.g. `wfcache-api -c "ls /Lotus" [arg ...]`)
 
-## Environment variables
-
-- `RUST_LOG`: set the log level (e.g. `RUST_LOG=wfcache_api=debug`)
-
 ## Supported formats
 
 - [x] `*.png` Images (Exported as DDS)
