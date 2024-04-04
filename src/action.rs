@@ -10,6 +10,7 @@ pub enum Action {
     NavigateOut,
 
     ExtractToggle,
+    RecursiveModeToggle,
 
     Tick,
     Render,
@@ -29,6 +30,7 @@ impl From<&Event> for Action {
                 KeyCode::Char('h') | KeyCode::Left | KeyCode::Backspace => Action::NavigateOut,
                 KeyCode::Char('l') | KeyCode::Right | KeyCode::Enter => Action::NavigateIn,
                 KeyCode::Char(' ') => Action::ExtractToggle,
+                KeyCode::Char('r') | KeyCode::Char('R') => Action::RecursiveModeToggle,
                 KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => Action::Quit,
                 _ => Action::None,
             },

@@ -86,6 +86,7 @@ impl Extract {
     pub fn handle(&mut self, action: &Action) -> Result<()> {
         match action {
             Action::ExtractToggle => self.toggle_extract()?,
+            Action::RecursiveModeToggle => self.toggle_recursive(),
             Action::Tick => self.update_progress(),
             _ => {}
         }
@@ -129,6 +130,10 @@ impl Extract {
         Ok(())
     }
 
+    fn toggle_recursive(&mut self) {
+        self.recursive = !self.recursive;
+    }
+
     fn update_progress(&mut self) {
         while let Ok((count, progress)) = self.progress_rx.try_recv() {
             self.gauge_widget.set_progress(count, progress);
@@ -152,9 +157,17 @@ impl Drop for Extract {
 
 impl WidgetRef for Extract {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
+        let recursive_mode_text = if self.recursive {
+            "Recursive Enabled "
+        } else {
+            "Recursive Disabled "
+        };
+
         let instructions = Line::from(vec![
             " Extract ".into(),
             "<Space> ".light_blue(),
+            recursive_mode_text.into(),
+            "<R> ".light_blue(),
             "Quit ".into(),
             "<Q> ".light_blue(),
         ]);
