@@ -1,8 +1,8 @@
-use std::io::{Error, ErrorKind, Result};
-use std::rc::Rc;
+use std::sync::Arc;
 
 use derivative::Derivative;
 use lotus_lib::cache_pair::CachePairReader;
+use lotus_lib::package::{Package, PackageType};
 use lotus_lib::toc::{DirectoryNode, FileNode, Node, NodeKind};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -12,64 +12,51 @@ use ratatui::widgets::{Block, Borders, Padding, Paragraph, Widget, WidgetRef, Wr
 
 #[derive(Derivative)]
 #[derivative(Debug)]
-pub struct Info<'a> {
+pub struct Info {
     #[derivative(Debug = "ignore")]
-    f_cache: Option<Rc<&'a CachePairReader>>,
-    #[derivative(Debug = "ignore")]
-    b_cache: Option<Rc<&'a CachePairReader>>,
+    package: Arc<Package<CachePairReader>>,
 
     h_node: Node,
     f_node: Option<Node>,
     b_node: Option<Node>,
 }
 
-impl<'a> Info<'a> {
-    pub fn new(
-        h_cache: Rc<&'a CachePairReader>,
-        f_cache: Option<Rc<&'a CachePairReader>>,
-        b_cache: Option<Rc<&'a CachePairReader>>,
-    ) -> Result<Self> {
-        let h_node = h_cache
-            .clone()
-            .get_directory_node("/")
-            .ok_or(Error::new(ErrorKind::NotFound, "Node not found"))?;
+impl Info {
+    pub fn new(package: Arc<Package<CachePairReader>>) -> Self {
+        let h_cache = package.borrow(PackageType::H).unwrap();
+        let h_node = h_cache.get_directory_node("/").unwrap();
 
-        Ok(Self {
-            f_cache,
-            b_cache,
+        Self {
+            package,
             h_node,
             f_node: None,
             b_node: None,
-        })
+        }
     }
 
-    pub fn set_node(&mut self, node: &Node) -> Result<()> {
+    pub fn set_node(&mut self, node: &Node) {
         let node_path = node.path();
         if self.h_node.path() == node_path {
-            return Ok(());
+            return;
         }
 
         self.h_node = node.clone();
 
         if node.kind() == NodeKind::File {
-            self.f_node = self
-                .f_cache
-                .as_ref()
-                .and_then(|cache| cache.get_file_node(&node_path));
-            self.b_node = self
-                .b_cache
-                .as_ref()
-                .and_then(|cache| cache.get_file_node(&node_path));
+            if let Some(f_cache) = self.package.borrow(PackageType::F) {
+                self.f_node = f_cache.get_file_node(&node_path);
+            }
+            if let Some(b_cache) = self.package.borrow(PackageType::B) {
+                self.b_node = b_cache.get_file_node(&node_path);
+            }
         } else {
             self.f_node = None;
             self.b_node = None;
         }
-
-        Ok(())
     }
 }
 
-impl WidgetRef for Info<'_> {
+impl WidgetRef for Info {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         let node_name = format!("Name: {}", self.h_node.name());
         let node_path = format!("Path: {}", self.h_node.path().to_string_lossy());
