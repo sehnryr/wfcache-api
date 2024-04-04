@@ -11,10 +11,6 @@ pub struct Args {
     #[arg(short, long, default_value = "Misc")]
     pub package: String,
 
-    /// Execute a command without opening the shell
-    #[arg(short, long)]
-    pub command: Option<String>,
-
     /// Output directory for extracted files
     #[arg(short, long, default_value = "Extracted")]
     pub output: std::path::PathBuf,
