@@ -1,8 +1,7 @@
-use std::io::{Error, ErrorKind, Result, Write};
 use std::path::PathBuf;
 
 use lotus_lib::cache_pair::CachePairReader;
-use lotus_lib::package::Package;
+use lotus_lib::package::{Package, PackageType};
 use lotus_lib::toc::{DirectoryNode, Node, NodeKind};
 use lotus_utils_audio::Audio;
 use lotus_utils_texture::Texture;
@@ -15,7 +14,7 @@ pub fn extract_file(
     count: usize,
     total: usize,
     progress_tx: UnboundedSender<(usize, usize)>,
-) -> Result<()> {
+) {
     progress_tx.send((count, total)).unwrap();
 
     let file_name = file_node.name();
@@ -30,17 +29,25 @@ pub fn extract_file(
     };
     std::fs::create_dir_all(&output_dir).unwrap();
 
+    let mut file_name: String = file_name;
+    let file_data: Vec<u8>;
+
     if file_name.ends_with(".png") {
-        extract_texture(package, file_node, &output_dir)?;
+        file_name = package.get_texture_file_name(file_node);
+        file_data = package.decompress_texture(file_node).unwrap();
     } else if file_name.ends_with(".wav") {
-        extract_audio(package, file_node, &output_dir)?;
+        (file_data, file_name) = package.decompress_audio(file_node).unwrap();
     } else {
-        extract_decompressed(package, &file_path, &output_dir, "H")?;
+        // Decompress and extract a file from the cache without parsing it (e.g. audio, texture)
+        let cache = package.borrow(PackageType::H).unwrap();
+        let file_node = cache.get_file_node(&file_path).unwrap();
+        file_data = cache.decompress_data(file_node.clone()).unwrap()
     }
 
-    progress_tx.send((count + 1, total)).unwrap();
+    // Write the file
+    std::fs::write(output_dir.join(file_name), file_data).unwrap();
 
-    Ok(())
+    progress_tx.send((count + 1, total)).unwrap();
 }
 
 pub fn extract_dir(
@@ -50,7 +57,7 @@ pub fn extract_dir(
     recursive: bool,
     extract_rx: &mut UnboundedReceiver<()>,
     progress_tx: UnboundedSender<(usize, usize)>,
-) -> Result<()> {
+) {
     let mut files: Vec<Node> = Vec::new();
     let mut directories: Vec<Node> = vec![dir_node.clone()];
 
@@ -79,87 +86,6 @@ pub fn extract_dir(
             count,
             total,
             progress_tx.clone(),
-        )?;
+        );
     }
-
-    Ok(())
-}
-
-/// Decompress and extract a file from the cache without parsing it (e.g. audio, texture)
-pub fn extract_decompressed(
-    package: &Package<CachePairReader>,
-    file_path: &PathBuf,
-    output_dir: &PathBuf,
-    cache_name: &str,
-) -> Result<()> {
-    let cache = package.borrow(cache_name);
-
-    // Check if the cache exists
-    let cache = cache.ok_or(Error::new(
-        ErrorKind::NotFound,
-        format!("Cache {} not found", cache_name),
-    ))?;
-
-    // Get the file node
-    let file_node = cache.get_file_node(&file_path).ok_or(Error::new(
-        ErrorKind::NotFound,
-        format!("File '{}' does not exist in the cache", file_path.display()),
-    ))?;
-
-    // Extract the file
-    let file_data = cache.decompress_data(file_node.clone()).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidData,
-            format!("Failed to decompress file '{}': {}", file_node.name(), e),
-        )
-    })?;
-
-    // Write the file
-    std::fs::write(output_dir.join(file_path.file_name().unwrap()), file_data)?;
-
-    Ok(())
-}
-
-fn extract_audio(
-    package: &Package<CachePairReader>,
-    file_node: &Node,
-    output_dir: &PathBuf,
-) -> Result<()> {
-    // Get the file data and file name
-    let (file_data, file_name) = package.decompress_audio(file_node).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidData,
-            format!("Failed to decompress audio '{}': {}", file_node.name(), e),
-        )
-    })?;
-
-    // Create the output file
-    let mut buffer = std::fs::File::create(output_dir.join(file_name)).unwrap();
-
-    // Write the file data to the output file
-    buffer.write_all(&file_data).unwrap();
-
-    Ok(())
-}
-
-fn extract_texture(
-    package: &Package<CachePairReader>,
-    file_node: &Node,
-    output_dir: &PathBuf,
-) -> Result<()> {
-    let file_name = package.get_texture_file_name(file_node);
-    let file_data: Vec<u8> = package.decompress_texture(file_node).map_err(|e| {
-        Error::new(
-            ErrorKind::InvalidData,
-            format!("Failed to decompress texture '{}': {}", file_node.name(), e),
-        )
-    })?;
-
-    // Create the output file
-    let mut buffer = std::fs::File::create(output_dir.join(file_name)).unwrap();
-
-    // Write the file data to the output file
-    buffer.write_all(&file_data).unwrap();
-
-    Ok(())
 }

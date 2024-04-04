@@ -222,17 +222,15 @@ fn extract(
     extract_rx: &mut UnboundedReceiver<()>,
     progress_tx: UnboundedSender<(usize, usize)>,
 ) {
-    if let NodeKind::File = node.kind() {
-        return extract_file(&package, &node, &output_dir, 0, 1, progress_tx).unwrap();
+    match node.kind() {
+        NodeKind::Directory => extract_dir(
+            &package,
+            &node,
+            &output_dir,
+            recursive,
+            extract_rx,
+            progress_tx,
+        ),
+        NodeKind::File => extract_file(&package, &node, &output_dir, 0, 1, progress_tx),
     }
-
-    extract_dir(
-        &package,
-        &node,
-        &output_dir,
-        recursive,
-        extract_rx,
-        progress_tx,
-    )
-    .unwrap();
 }
