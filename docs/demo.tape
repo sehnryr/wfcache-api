@@ -1,7 +1,6 @@
 # A VHS tape. See https://github.com/charmbracelet/vhs
 Output demo.gif
 
-Set Theme "GitHub Dark"
 Set FontSize 16
 Set FontFamily "Maple Mono NF"
 Set Width 1200
