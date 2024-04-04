@@ -33,6 +33,6 @@ Type " "
 Sleep 2s
 Type "q"
 Sleep 1s
-Type "ls Output/Lotus/Music/LisetJukebox/"
+Type "lsd Output/Lotus/Music/LisetJukebox/"
 Enter
 Sleep 5s
